@@ -1,0 +1,229 @@
+name: 'Validate Pull Request'
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  test:
+    # Avoid duplicate execution after PR merge:
+    # - run always for pull_request/workflow_dispatch
+    # - for push, run only on initial branch creation push (before = all zeros)
+    if: ${{ github.event_name != 'push' || github.event.before == '0000000000000000000000000000000000000000' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22.x
+
+      - name: Install Global Dependencies
+        run: npm i -g @salesforce/cli
+
+      - name: Install Code Analyzer plugin
+        run: sf plugins install code-analyzer
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Get Diff
+        id: diff
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          OUT=".diff_files.txt"
+          TMP=".diff_files_raw.txt"
+          : > "$OUT"
+
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+            HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+            git fetch --no-tags --prune --depth=1 origin "$BASE_SHA" "$HEAD_SHA"
+            git diff --name-only --diff-filter=ACMR "$BASE_SHA" "$HEAD_SHA" > "$TMP"
+          else
+            AFTER_REF="${{ github.sha }}"
+            git fetch --no-tags --prune --depth=1 origin "$AFTER_REF" || true
+            BEFORE_RAW="${{ github.event.before }}"
+            BEFORE_REF="$(git rev-parse --verify "$BEFORE_RAW^{commit}" 2>/dev/null || git hash-object -t tree /dev/null)"
+            git diff --name-only --diff-filter=ACMR "$BEFORE_REF" "$AFTER_REF" > "$TMP"
+          fi
+
+          # Keep only files that exist in workspace (skip deletes/odd renames)
+          while IFS= read -r f; do
+            [[ -f "$f" ]] && echo "$f" >> "$OUT"
+          done < "$TMP"
+          rm -f "$TMP"
+
+          COUNT="$(wc -l < "$OUT" | tr -d ' ')"
+          echo "count=$COUNT" >> "$GITHUB_OUTPUT"
+          echo "path=$OUT" >> "$GITHUB_OUTPUT"
+
+          echo "Changed files ($COUNT):"
+          sed 's/^/ - /' "$OUT" || true
+
+      - name: Prettier Check
+        if: steps.diff.outputs.count != '0'
+        shell: bash
+        run: |
+          mapfile -t files < "${{ steps.diff.outputs.path }}"
+
+          echo "Prettier checking ${#files[@]} file(s):"
+
+          npx prettier --list-different  --ignore-unknown -- "${files[@]}"
+
+      - name: Analyze Code
+        if: steps.diff.outputs.count != '0'
+        shell: bash
+        run: |
+          mapfile -t files < "${{ steps.diff.outputs.path }}"
+
+          args=()
+          for f in "${files[@]}"; do
+            args+=(--target "$f")
+          done
+
+          sf code-analyzer run \
+            --config-file ./code-analyzer.yml \
+            --severity-threshold 5 \
+            --workspace . \
+            "${args[@]}"
+
+      - name: Resolve Changed Packages
+        id: packages
+        if: steps.diff.outputs.count != '0'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          has_apex_query=0
+          has_apex_sql=0
+          has_apex_cdp=0
+
+          while IFS= read -r f; do
+            case "$f" in
+              sfdx-source/apex-query/*|e2e/test/soql/*|e2e/test/soql-external/*|e2e/main/soql/*|e2e/main/soql-external/*|e2e/data/*)
+                has_apex_query=1
+                ;;
+              sfdx-source/apex-sql-query/*|e2e/test/sql/*|e2e/main/sql/*)
+                has_apex_sql=1
+                ;;
+              sfdx-source/apex-cdp-query/*|e2e/test/cdp/*|e2e/main/cdp/*|e2e/ingest_cdp_seed.sh|e2e/ingest_data360_csv.sh)
+                has_apex_cdp=1
+                ;;
+              e2e/run_e2e.sh|e2e/run_tests.sh|e2e/run_soql_tests.sh|e2e/run_soql_external_tests.sh|e2e/run_sql_tests.sh|e2e/run_cdp_tests.sh|e2e/create_named_credential.sh)
+                has_apex_query=1
+                has_apex_sql=1
+                has_apex_cdp=1
+                ;;
+            esac
+          done < "${{ steps.diff.outputs.path }}"
+
+          local_packages=()
+          [[ $has_apex_query -eq 1 ]] && local_packages+=("apex-query")
+          [[ $has_apex_sql -eq 1 ]] && local_packages+=("apex-sql-query")
+
+          local_csv=""
+          if [[ ${#local_packages[@]} -gt 0 ]]; then
+            local_csv="$(IFS=,; echo "${local_packages[*]}")"
+          fi
+
+          changed=()
+          [[ $has_apex_query -eq 1 ]] && changed+=("apex-query")
+          [[ $has_apex_sql -eq 1 ]] && changed+=("apex-sql-query")
+          [[ $has_apex_cdp -eq 1 ]] && changed+=("apex-cdp-query")
+          changed_csv=""
+          if [[ ${#changed[@]} -gt 0 ]]; then
+            changed_csv="$(IFS=,; echo "${changed[*]}")"
+          fi
+
+          echo "local_packages=$local_csv" >> "$GITHUB_OUTPUT"
+          echo "has_local=$([[ -n "$local_csv" ]] && echo 1 || echo 0)" >> "$GITHUB_OUTPUT"
+          echo "has_cdp=$has_apex_cdp" >> "$GITHUB_OUTPUT"
+          echo "changed_packages=$changed_csv" >> "$GITHUB_OUTPUT"
+
+          echo "Changed packages: ${changed_csv:-<none>}"
+          echo "Local E2E packages: ${local_csv:-<none>}"
+          echo "CDP E2E required: $has_apex_cdp"
+
+      - name: Create Auth File
+        run: echo ${{ secrets.SF_DEV_HUB_AUTH_URL }} > authFile
+
+      - name: Authorize DevHub
+        run: sf org login sfdx-url -f authFile -d
+
+      - name: Create Scratch Org
+        id: create_scratch_org
+        run: sf org create scratch -e developer -d -a TestOrg -y 1 -w 30
+
+      - name: Deploy Metadata
+        run: sf project deploy start -o TestOrg -w 10
+
+      - name: Run Apex Tests
+        run: sf apex run test -o TestOrg -l RunLocalTests -w 10
+
+      - name: Run Local E2E Tests
+        if: steps.packages.outputs.has_local == '1'
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash e2e/run_e2e.sh --packages "${{ steps.packages.outputs.local_packages }}" --org TestOrg
+
+      - name: Authorize DataCloud Org (JWT)
+        if: steps.packages.outputs.has_cdp == '1'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${{ secrets.SF_DATACLOUD_CLIENT_ID }}" ]]; then
+            echo "Missing secret: SF_DATACLOUD_CLIENT_ID"
+            exit 1
+          fi
+          if [[ -z "${{ secrets.SF_DATACLOUD_USERNAME }}" ]]; then
+            echo "Missing secret: SF_DATACLOUD_USERNAME"
+            exit 1
+          fi
+          if [[ -z "${{ secrets.SF_DATACLOUD_JWT_KEY }}" ]]; then
+            echo "Missing secret: SF_DATACLOUD_JWT_KEY"
+            exit 1
+          fi
+          if [[ -z "${{ secrets.SF_DATACLOUD_ORG_ALIAS }}" ]]; then
+            echo "Missing secret: SF_DATACLOUD_ORG_ALIAS"
+            exit 1
+          fi
+
+          LOGIN_URL="${{ secrets.SF_DATACLOUD_LOGIN_URL }}"
+          if [[ -z "$LOGIN_URL" ]]; then
+            LOGIN_URL="https://login.salesforce.com"
+          fi
+
+          printf '%s' "${{ secrets.SF_DATACLOUD_JWT_KEY }}" > datacloudjwt.key
+          sf org login jwt \
+            --username "${{ secrets.SF_DATACLOUD_USERNAME }}" \
+            --client-id "${{ secrets.SF_DATACLOUD_CLIENT_ID }}" \
+            --jwt-key-file datacloudjwt.key \
+            --instance-url "$LOGIN_URL" \
+            --alias "${{ secrets.SF_DATACLOUD_ORG_ALIAS }}"
+
+      - name: Run CDP E2E Tests
+        if: steps.packages.outputs.has_cdp == '1'
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash e2e/run_e2e.sh --packages apex-cdp-query --org "${{ secrets.SF_DATACLOUD_ORG_ALIAS }}"
+
+      - name: Delete Scratch Org
+        if: steps.create_scratch_org.outcome == 'success'
+        run: sf org delete scratch -o TestOrg -p
+
+      - name: Delete Auth File
+        if: always()
+        run: rm -f authFile datacloudjwt.key

@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<ruleset name="apex-di" xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
+    <description>Custom rules for Apex Mock framework.</description>
+
+    <rule name="MethodNamingConventions" language="apex" message="Test method name should be in snake_case" class="net.sourceforge.pmd.lang.apex.rule.codestyle.MethodNamingConventionsRule">
+        <description>Enforces snake_case naming convention for test method names</description>
+        <priority>3</priority>
+        <properties>
+            <property name="testPattern" value="should_[a-z]+(_[a-z0-9]+)*"/>
+        </properties>
+    </rule>
+</ruleset>

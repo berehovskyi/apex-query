@@ -1,0 +1,451 @@
+Account.ExternalId__c,Origin,Priority,Status,Subject,Type,ExternalId__c
+ACC_0005,Email,High,Working,Issue 0,Feature Request,CAS_00000
+ACC_0005,Web,Low,Working,Issue 1,Problem,CAS_00001
+ACC_0005,Email,Low,Working,Issue 2,Feature Request,CAS_00002
+ACC_0005,Phone,Low,New,Issue 3,Feature Request,CAS_00003
+ACC_0005,Email,High,New,Issue 4,Problem,CAS_00004
+ACC_0005,Web,Medium,New,Issue 5,Feature Request,CAS_00005
+ACC_0005,Web,High,New,Issue 6,Feature Request,CAS_00006
+ACC_0005,Web,Medium,New,Issue 7,Feature Request,CAS_00007
+ACC_0092,Web,High,Working,Issue 8,Problem,CAS_00008
+ACC_0092,Phone,High,Closed,Issue 9,Problem,CAS_00009
+ACC_0023,Web,High,Working,Issue 10,Feature Request,CAS_00010
+ACC_0023,Email,Medium,Closed,Issue 11,Feature Request,CAS_00011
+ACC_0023,Web,,New,Issue 12,Problem,CAS_00012
+ACC_0023,Web,High,New,,Feature Request,CAS_00013
+ACC_0023,Email,High,Working,,Problem,CAS_00014
+ACC_0023,Web,,Working,Issue 15,Feature Request,CAS_00015
+ACC_0023,Email,Low,New,Issue 16,Feature Request,CAS_00016
+ACC_0023,Web,Medium,New,Issue 17,Problem,CAS_00017
+ACC_0023,Email,Medium,Working,,Problem,CAS_00018
+ACC_0023,Phone,Low,Working,Issue 19,Problem,CAS_00019
+ACC_0065,Phone,Low,Working,Issue 20,Problem,CAS_00020
+ACC_0065,Phone,,Closed,Issue 21,Problem,CAS_00021
+ACC_0109,Phone,High,Closed,Issue 22,Feature Request,CAS_00022
+ACC_0109,Web,High,New,Issue 23,Problem,CAS_00023
+ACC_0109,Web,Low,Closed,Issue 24,Feature Request,CAS_00024
+ACC_0109,Phone,Low,New,Issue 25,Feature Request,CAS_00025
+ACC_0109,Web,Low,Closed,Issue 26,Problem,CAS_00026
+ACC_0109,Web,High,Closed,Issue 27,Problem,CAS_00027
+ACC_0109,Web,Low,New,Issue 28,Feature Request,CAS_00028
+ACC_0109,Web,High,New,Issue 29,Feature Request,CAS_00029
+ACC_0109,Email,High,New,Issue 30,Problem,CAS_00030
+ACC_0053,Web,High,Working,Issue 31,Problem,CAS_00031
+ACC_0053,Email,,Closed,Issue 32,Problem,CAS_00032
+ACC_0053,Web,High,Working,Issue 33,Problem,CAS_00033
+ACC_0053,Email,Medium,Working,Issue 34,Problem,CAS_00034
+ACC_0053,Phone,Medium,New,Issue 35,Feature Request,CAS_00035
+ACC_0079,Web,High,Closed,Issue 36,Problem,CAS_00036
+ACC_0079,Web,Medium,Working,Issue 37,,CAS_00037
+ACC_0079,Email,Medium,Closed,Issue 38,Feature Request,CAS_00038
+ACC_0079,Email,Medium,New,Issue 39,Problem,CAS_00039
+ACC_0079,Email,Low,Closed,Issue 40,Feature Request,CAS_00040
+ACC_0079,Email,High,Working,Issue 41,Problem,CAS_00041
+ACC_0079,Phone,High,Working,Issue 42,,CAS_00042
+ACC_0079,Web,,New,Issue 43,Problem,CAS_00043
+ACC_0079,Email,Medium,New,Issue 44,,CAS_00044
+ACC_0079,Web,Low,New,,Problem,CAS_00045
+ACC_0046,Web,Low,Working,Issue 46,Problem,CAS_00046
+ACC_0046,Phone,High,Working,Issue 47,Feature Request,CAS_00047
+ACC_0046,Email,High,Closed,Issue 48,Feature Request,CAS_00048
+ACC_0046,Web,High,Closed,Issue 49,Problem,CAS_00049
+ACC_0114,Web,High,Closed,Issue 50,Problem,CAS_00050
+ACC_0114,Email,High,Working,,Problem,CAS_00051
+ACC_0114,Email,Medium,Working,Issue 52,Feature Request,CAS_00052
+ACC_0114,Web,Medium,New,Issue 53,Problem,CAS_00053
+ACC_0114,Web,Medium,New,Issue 54,,CAS_00054
+ACC_0114,Email,Low,Working,Issue 55,Problem,CAS_00055
+ACC_0114,Phone,Medium,Closed,Issue 56,Feature Request,CAS_00056
+ACC_0114,Email,Low,New,Issue 57,Problem,CAS_00057
+ACC_0114,Email,High,Working,Issue 58,Problem,CAS_00058
+ACC_0093,Phone,Medium,Working,Issue 59,Feature Request,CAS_00059
+ACC_0093,Email,Low,New,Issue 60,Problem,CAS_00060
+ACC_0093,Web,High,Working,Issue 61,Feature Request,CAS_00061
+ACC_0093,Phone,Low,Closed,Issue 62,Problem,CAS_00062
+ACC_0093,Web,High,Working,Issue 63,,CAS_00063
+ACC_0093,Email,High,New,Issue 64,Problem,CAS_00064
+ACC_0093,Email,High,Working,Issue 65,Feature Request,CAS_00065
+ACC_0093,Web,High,Closed,Issue 66,Problem,CAS_00066
+ACC_0093,Phone,High,New,Issue 67,Problem,CAS_00067
+ACC_0093,Phone,High,Closed,Issue 68,,CAS_00068
+ACC_0042,Web,Medium,Closed,Issue 69,Feature Request,CAS_00069
+ACC_0042,Web,High,Closed,Issue 70,Problem,CAS_00070
+ACC_0042,Web,High,New,Issue 71,Problem,CAS_00071
+ACC_0042,Phone,Low,New,Issue 72,,CAS_00072
+ACC_0056,Web,,Closed,Issue 73,Feature Request,CAS_00073
+ACC_0056,Email,High,Closed,Issue 74,Feature Request,CAS_00074
+ACC_0056,Web,High,New,Issue 75,Problem,CAS_00075
+ACC_0056,Phone,Medium,Closed,Issue 76,,CAS_00076
+ACC_0043,Phone,,New,Issue 77,Feature Request,CAS_00077
+ACC_0043,Email,Low,New,,Problem,CAS_00078
+ACC_0043,Web,Low,Working,,Problem,CAS_00079
+ACC_0076,Phone,Medium,Closed,Issue 80,Problem,CAS_00080
+ACC_0076,Web,High,Working,Issue 81,Problem,CAS_00081
+ACC_0076,Web,Low,New,Issue 82,Feature Request,CAS_00082
+ACC_0076,Web,,New,Issue 83,Feature Request,CAS_00083
+ACC_0076,Web,Low,Closed,Issue 84,Problem,CAS_00084
+ACC_0076,Web,Medium,Closed,,Feature Request,CAS_00085
+ACC_0076,Phone,Low,Closed,Issue 86,,CAS_00086
+ACC_0076,Web,High,New,Issue 87,Feature Request,CAS_00087
+ACC_0076,Phone,,Working,Issue 88,Problem,CAS_00088
+ACC_0076,Email,Low,Closed,Issue 89,Feature Request,CAS_00089
+ACC_0015,Phone,Medium,Closed,Issue 90,Problem,CAS_00090
+ACC_0015,Phone,High,New,Issue 91,Problem,CAS_00091
+ACC_0015,Web,Low,New,Issue 92,Feature Request,CAS_00092
+ACC_0015,Email,High,Working,Issue 93,Feature Request,CAS_00093
+ACC_0018,Web,Low,New,Issue 94,Feature Request,CAS_00094
+ACC_0018,Web,High,Working,Issue 95,Problem,CAS_00095
+ACC_0018,Phone,High,New,Issue 96,Problem,CAS_00096
+ACC_0018,Web,Medium,Working,Issue 97,Feature Request,CAS_00097
+ACC_0018,Phone,Medium,Closed,Issue 98,Feature Request,CAS_00098
+ACC_0018,Web,Medium,Working,Issue 99,Problem,CAS_00099
+ACC_0018,Web,Medium,Closed,Issue 100,Problem,CAS_00100
+ACC_0018,Phone,Medium,Closed,Issue 101,Problem,CAS_00101
+ACC_0018,Web,,Closed,Issue 102,Problem,CAS_00102
+ACC_0086,Web,Medium,Closed,Issue 103,Feature Request,CAS_00103
+ACC_0086,Phone,Low,Working,Issue 104,Problem,CAS_00104
+ACC_0086,Email,Medium,Closed,Issue 105,Feature Request,CAS_00105
+ACC_0086,Web,High,Closed,Issue 106,Problem,CAS_00106
+ACC_0086,Web,High,New,Issue 107,Feature Request,CAS_00107
+ACC_0085,Email,,New,Issue 108,Problem,CAS_00108
+ACC_0085,Web,Low,Working,Issue 109,Problem,CAS_00109
+ACC_0085,Phone,Low,Working,Issue 110,Feature Request,CAS_00110
+ACC_0085,Web,High,New,Issue 111,Problem,CAS_00111
+ACC_0085,Phone,Low,Closed,Issue 112,Feature Request,CAS_00112
+ACC_0085,Web,Medium,Working,Issue 113,Feature Request,CAS_00113
+ACC_0085,Email,High,Working,Issue 114,Feature Request,CAS_00114
+ACC_0085,Web,Low,Closed,Issue 115,Feature Request,CAS_00115
+ACC_0017,Phone,High,New,Issue 116,Feature Request,CAS_00116
+ACC_0017,Web,High,New,Issue 117,Feature Request,CAS_00117
+ACC_0099,Web,Medium,Working,Issue 118,Feature Request,CAS_00118
+ACC_0099,Phone,Medium,New,Issue 119,Feature Request,CAS_00119
+ACC_0099,Phone,Medium,Working,Issue 120,Feature Request,CAS_00120
+ACC_0099,Email,Medium,New,Issue 121,Problem,CAS_00121
+ACC_0099,Email,High,New,Issue 122,Problem,CAS_00122
+ACC_0054,Web,Low,New,Issue 123,,CAS_00123
+ACC_0054,Phone,High,Working,Issue 124,Feature Request,CAS_00124
+ACC_0054,Web,Medium,New,Issue 125,,CAS_00125
+ACC_0054,Phone,Low,New,Issue 126,Problem,CAS_00126
+ACC_0032,Phone,Low,Working,Issue 127,Feature Request,CAS_00127
+ACC_0032,Web,Low,New,Issue 128,Feature Request,CAS_00128
+ACC_0032,Phone,High,Closed,Issue 129,Problem,CAS_00129
+ACC_0091,Phone,High,Working,Issue 130,Problem,CAS_00130
+ACC_0091,Phone,High,New,Issue 131,Feature Request,CAS_00131
+ACC_0091,Web,High,Closed,Issue 132,Problem,CAS_00132
+ACC_0091,Phone,Medium,New,Issue 133,Feature Request,CAS_00133
+ACC_0091,Email,Medium,Closed,Issue 134,Feature Request,CAS_00134
+ACC_0091,Web,High,Closed,Issue 135,Problem,CAS_00135
+ACC_0103,Web,Medium,New,Issue 136,Feature Request,CAS_00136
+ACC_0103,Web,Low,New,Issue 137,Problem,CAS_00137
+ACC_0103,Email,Medium,Closed,Issue 138,Feature Request,CAS_00138
+ACC_0103,Web,Low,New,Issue 139,Feature Request,CAS_00139
+ACC_0103,Email,Low,New,Issue 140,Feature Request,CAS_00140
+ACC_0103,Phone,,New,Issue 141,Problem,CAS_00141
+ACC_0103,Web,Low,Working,Issue 142,Problem,CAS_00142
+ACC_0103,Phone,Low,Working,,Problem,CAS_00143
+ACC_0103,Web,,Working,,,CAS_00144
+ACC_0103,Email,Medium,Closed,Issue 145,Problem,CAS_00145
+ACC_0025,Phone,Medium,New,Issue 146,Problem,CAS_00146
+ACC_0025,Web,High,New,Issue 147,,CAS_00147
+ACC_0025,Email,Low,Working,Issue 148,,CAS_00148
+ACC_0025,Web,High,Closed,Issue 149,Feature Request,CAS_00149
+ACC_0025,Web,High,Closed,Issue 150,Feature Request,CAS_00150
+ACC_0025,Phone,High,New,Issue 151,,CAS_00151
+ACC_0025,Phone,High,New,Issue 152,,CAS_00152
+ACC_0025,Web,Low,New,Issue 153,,CAS_00153
+ACC_0044,Web,Medium,Working,Issue 154,Feature Request,CAS_00154
+ACC_0044,Phone,Medium,Working,Issue 155,Feature Request,CAS_00155
+ACC_0044,Phone,,New,Issue 156,Feature Request,CAS_00156
+ACC_0059,Phone,Low,Closed,Issue 157,Feature Request,CAS_00157
+ACC_0059,Web,Low,New,Issue 158,Problem,CAS_00158
+ACC_0059,Phone,High,New,,Feature Request,CAS_00159
+ACC_0059,Email,Medium,Closed,Issue 160,Problem,CAS_00160
+ACC_0059,Email,Low,New,Issue 161,Feature Request,CAS_00161
+ACC_0059,Email,High,Working,,Feature Request,CAS_00162
+ACC_0059,Web,Low,Working,Issue 163,Problem,CAS_00163
+ACC_0059,Web,Medium,New,Issue 164,Feature Request,CAS_00164
+ACC_0024,Email,Medium,Working,Issue 165,Feature Request,CAS_00165
+ACC_0024,Phone,Low,Working,Issue 166,Problem,CAS_00166
+ACC_0024,Web,,Closed,Issue 167,Feature Request,CAS_00167
+ACC_0024,Email,Medium,New,Issue 168,Feature Request,CAS_00168
+ACC_0024,Web,High,Working,Issue 169,Feature Request,CAS_00169
+ACC_0024,Phone,High,Closed,,Problem,CAS_00170
+ACC_0024,Phone,Medium,Working,Issue 171,Feature Request,CAS_00171
+ACC_0024,Phone,High,New,Issue 172,Problem,CAS_00172
+ACC_0082,Phone,,Working,Issue 173,Problem,CAS_00173
+ACC_0049,Phone,Medium,Working,Issue 174,Problem,CAS_00174
+ACC_0049,Email,Medium,New,Issue 175,,CAS_00175
+ACC_0083,Phone,Medium,Working,Issue 176,Problem,CAS_00176
+ACC_0083,Email,High,Working,Issue 177,Problem,CAS_00177
+ACC_0083,Web,,Closed,Issue 178,Problem,CAS_00178
+ACC_0083,Web,High,Closed,,Problem,CAS_00179
+ACC_0083,Email,High,Working,Issue 180,Problem,CAS_00180
+ACC_0083,Email,High,Closed,Issue 181,Problem,CAS_00181
+ACC_0083,Email,Medium,Closed,Issue 182,Feature Request,CAS_00182
+ACC_0083,Web,Medium,Working,Issue 183,Problem,CAS_00183
+ACC_0083,Phone,,New,Issue 184,Problem,CAS_00184
+ACC_0028,Email,Medium,New,Issue 185,,CAS_00185
+ACC_0119,Web,High,Closed,Issue 186,Problem,CAS_00186
+ACC_0119,Phone,Low,Working,Issue 187,,CAS_00187
+ACC_0014,Phone,Medium,New,Issue 188,Feature Request,CAS_00188
+ACC_0036,Email,Low,Closed,Issue 189,Feature Request,CAS_00189
+ACC_0036,Email,Medium,Working,Issue 190,Problem,CAS_00190
+ACC_0084,Web,Low,New,,Feature Request,CAS_00191
+ACC_0084,Web,Medium,New,Issue 192,Problem,CAS_00192
+ACC_0084,Web,Medium,New,Issue 193,Feature Request,CAS_00193
+ACC_0084,Phone,Low,New,Issue 194,Problem,CAS_00194
+ACC_0084,Web,,New,Issue 195,Feature Request,CAS_00195
+ACC_0084,Email,High,Working,Issue 196,Feature Request,CAS_00196
+ACC_0084,Email,Low,Closed,Issue 197,Feature Request,CAS_00197
+ACC_0084,Phone,High,New,Issue 198,Problem,CAS_00198
+ACC_0084,Email,,New,Issue 199,Problem,CAS_00199
+ACC_0084,Email,High,Closed,,Feature Request,CAS_00200
+ACC_0118,Email,Low,Closed,Issue 201,Feature Request,CAS_00201
+ACC_0118,Web,,Working,,Feature Request,CAS_00202
+ACC_0118,Email,Medium,New,Issue 203,Problem,CAS_00203
+ACC_0118,Email,Low,New,,Feature Request,CAS_00204
+ACC_0118,Email,High,Closed,Issue 205,,CAS_00205
+ACC_0118,Phone,High,New,Issue 206,Feature Request,CAS_00206
+ACC_0118,Web,Medium,New,,Feature Request,CAS_00207
+ACC_0118,Email,Medium,Working,Issue 208,Problem,CAS_00208
+ACC_0118,Phone,Medium,Working,Issue 209,Feature Request,CAS_00209
+ACC_0060,Web,,Closed,,Problem,CAS_00210
+ACC_0060,Phone,Low,New,Issue 211,Feature Request,CAS_00211
+ACC_0060,Web,Medium,Closed,Issue 212,Problem,CAS_00212
+ACC_0075,Phone,Low,New,Issue 213,Feature Request,CAS_00213
+ACC_0075,Phone,Low,New,Issue 214,Feature Request,CAS_00214
+ACC_0075,Email,High,New,Issue 215,Feature Request,CAS_00215
+ACC_0063,Phone,High,New,Issue 216,Feature Request,CAS_00216
+ACC_0063,Email,High,Closed,Issue 217,Feature Request,CAS_00217
+ACC_0063,Web,High,Working,,Feature Request,CAS_00218
+ACC_0063,Web,High,New,Issue 219,Problem,CAS_00219
+ACC_0063,Email,Medium,Working,Issue 220,,CAS_00220
+ACC_0063,Web,High,Working,Issue 221,Feature Request,CAS_00221
+ACC_0063,Phone,Medium,New,Issue 222,Feature Request,CAS_00222
+ACC_0063,Web,Low,New,Issue 223,Feature Request,CAS_00223
+ACC_0063,Web,High,New,Issue 224,Feature Request,CAS_00224
+ACC_0035,Web,High,New,Issue 225,Feature Request,CAS_00225
+ACC_0035,Phone,Low,Closed,Issue 226,Feature Request,CAS_00226
+ACC_0035,Phone,Medium,Closed,Issue 227,Problem,CAS_00227
+ACC_0035,Web,Low,Closed,,Feature Request,CAS_00228
+ACC_0035,Email,Low,New,Issue 229,Feature Request,CAS_00229
+ACC_0035,Phone,High,Working,Issue 230,Problem,CAS_00230
+ACC_0062,Web,Low,Closed,Issue 231,Feature Request,CAS_00231
+ACC_0062,Phone,Medium,Closed,Issue 232,Problem,CAS_00232
+ACC_0062,Phone,,New,Issue 233,Problem,CAS_00233
+ACC_0062,Email,High,Closed,Issue 234,Problem,CAS_00234
+ACC_0062,Email,Low,Working,Issue 235,Feature Request,CAS_00235
+ACC_0062,Web,High,Working,,Feature Request,CAS_00236
+ACC_0062,Web,Low,New,Issue 237,Feature Request,CAS_00237
+ACC_0062,Phone,,New,Issue 238,Problem,CAS_00238
+ACC_0062,Web,Low,Working,Issue 239,Feature Request,CAS_00239
+ACC_0004,Web,Medium,Working,Issue 240,,CAS_00240
+ACC_0004,Phone,Medium,Closed,Issue 241,Problem,CAS_00241
+ACC_0004,Email,,New,Issue 242,Feature Request,CAS_00242
+ACC_0004,Phone,Medium,Closed,Issue 243,Feature Request,CAS_00243
+ACC_0007,Phone,Low,New,,Problem,CAS_00244
+ACC_0007,Email,Medium,New,Issue 245,Problem,CAS_00245
+ACC_0007,Web,Low,New,Issue 246,Problem,CAS_00246
+ACC_0041,Email,Medium,New,Issue 247,Problem,CAS_00247
+ACC_0041,Email,High,New,Issue 248,Problem,CAS_00248
+ACC_0041,Phone,,New,,Problem,CAS_00249
+ACC_0041,Phone,Medium,New,,Feature Request,CAS_00250
+ACC_0041,Phone,Medium,Working,Issue 251,,CAS_00251
+ACC_0041,Phone,Medium,Working,Issue 252,Feature Request,CAS_00252
+ACC_0041,Phone,High,Working,Issue 253,Feature Request,CAS_00253
+ACC_0041,Email,Medium,Working,Issue 254,Problem,CAS_00254
+ACC_0041,Email,High,Closed,Issue 255,Problem,CAS_00255
+ACC_0067,Web,Medium,New,Issue 256,,CAS_00256
+ACC_0067,Phone,High,New,Issue 257,Problem,CAS_00257
+ACC_0067,Web,,Working,Issue 258,Problem,CAS_00258
+ACC_0067,Web,Low,New,Issue 259,,CAS_00259
+ACC_0067,Web,High,Working,Issue 260,,CAS_00260
+ACC_0067,Web,High,New,Issue 261,,CAS_00261
+ACC_0067,Phone,Low,Working,Issue 262,Problem,CAS_00262
+ACC_0067,Phone,Medium,New,Issue 263,Feature Request,CAS_00263
+ACC_0100,Phone,High,New,Issue 264,Problem,CAS_00264
+ACC_0100,Web,Medium,Closed,Issue 265,Problem,CAS_00265
+ACC_0100,Phone,Low,Closed,Issue 266,Problem,CAS_00266
+ACC_0087,Phone,Low,Working,Issue 267,Problem,CAS_00267
+ACC_0106,Phone,Medium,Working,Issue 268,Feature Request,CAS_00268
+ACC_0106,Web,,Working,Issue 269,,CAS_00269
+ACC_0106,Web,High,Closed,Issue 270,Feature Request,CAS_00270
+ACC_0106,Email,High,New,Issue 271,Problem,CAS_00271
+ACC_0106,Email,,New,,,CAS_00272
+ACC_0106,Email,Low,Closed,Issue 273,Feature Request,CAS_00273
+ACC_0106,Email,High,New,Issue 274,Problem,CAS_00274
+ACC_0106,Phone,High,Working,Issue 275,,CAS_00275
+ACC_0106,Email,Low,New,Issue 276,Problem,CAS_00276
+ACC_0106,Web,,New,Issue 277,Feature Request,CAS_00277
+ACC_0019,Web,,Working,,Feature Request,CAS_00278
+ACC_0019,Web,High,New,Issue 279,Feature Request,CAS_00279
+ACC_0019,Phone,Low,New,Issue 280,Feature Request,CAS_00280
+ACC_0019,Email,Low,New,Issue 281,Problem,CAS_00281
+ACC_0019,Phone,Medium,Working,Issue 282,Feature Request,CAS_00282
+ACC_0019,Web,Low,Closed,,Feature Request,CAS_00283
+ACC_0019,Web,Medium,New,,Feature Request,CAS_00284
+ACC_0055,Email,High,Working,Issue 285,Feature Request,CAS_00285
+ACC_0055,Phone,,Working,Issue 286,,CAS_00286
+ACC_0055,Web,,Closed,Issue 287,Problem,CAS_00287
+ACC_0055,Phone,Low,New,Issue 288,Problem,CAS_00288
+ACC_0055,Web,Low,Closed,Issue 289,Feature Request,CAS_00289
+ACC_0055,Web,Medium,Working,Issue 290,Problem,CAS_00290
+ACC_0045,Email,High,New,Issue 291,Feature Request,CAS_00291
+ACC_0045,Web,Medium,Closed,Issue 292,Problem,CAS_00292
+ACC_0045,Web,High,Closed,,Problem,CAS_00293
+ACC_0045,Web,Low,New,,Problem,CAS_00294
+ACC_0045,Web,Low,Closed,Issue 295,Feature Request,CAS_00295
+ACC_0045,Web,Medium,Working,Issue 296,Feature Request,CAS_00296
+ACC_0045,Web,Medium,Working,Issue 297,Feature Request,CAS_00297
+ACC_0045,Phone,Low,Closed,Issue 298,Problem,CAS_00298
+ACC_0045,Web,Medium,Closed,Issue 299,Problem,CAS_00299
+ACC_0116,Email,High,New,Issue 300,Problem,CAS_00300
+ACC_0116,Phone,Medium,New,Issue 301,,CAS_00301
+ACC_0116,Phone,Low,New,Issue 302,,CAS_00302
+ACC_0116,Phone,Medium,Closed,,,CAS_00303
+ACC_0102,Web,,Working,Issue 304,Problem,CAS_00304
+ACC_0102,Email,Low,Closed,Issue 305,Problem,CAS_00305
+ACC_0102,Web,Medium,New,Issue 306,Problem,CAS_00306
+ACC_0102,Email,High,New,,Feature Request,CAS_00307
+ACC_0102,Email,,Closed,,Problem,CAS_00308
+ACC_0102,Phone,Low,New,Issue 309,Feature Request,CAS_00309
+ACC_0102,Email,Medium,Working,Issue 310,Feature Request,CAS_00310
+ACC_0102,Web,,Closed,,Feature Request,CAS_00311
+ACC_0102,Phone,Medium,Working,Issue 312,,CAS_00312
+ACC_0034,Phone,High,New,Issue 313,Problem,CAS_00313
+ACC_0034,Phone,Medium,New,Issue 314,Problem,CAS_00314
+ACC_0034,Phone,High,Working,,Problem,CAS_00315
+ACC_0034,Phone,Medium,New,Issue 316,Problem,CAS_00316
+ACC_0034,Phone,High,Working,Issue 317,Problem,CAS_00317
+ACC_0034,Web,Low,New,Issue 318,Problem,CAS_00318
+ACC_0034,Web,,Working,Issue 319,Problem,CAS_00319
+ACC_0089,Phone,Low,Working,Issue 320,,CAS_00320
+ACC_0033,Phone,High,New,Issue 321,Problem,CAS_00321
+ACC_0033,Phone,High,Working,,Problem,CAS_00322
+ACC_0033,Phone,High,Working,Issue 323,Problem,CAS_00323
+ACC_0033,Web,Medium,New,Issue 324,Problem,CAS_00324
+ACC_0033,Web,Medium,New,Issue 325,Feature Request,CAS_00325
+ACC_0033,Email,Low,New,,Problem,CAS_00326
+ACC_0033,Phone,Low,New,Issue 327,Problem,CAS_00327
+ACC_0033,Web,,Working,Issue 328,Problem,CAS_00328
+ACC_0111,Email,High,Working,Issue 329,Problem,CAS_00329
+ACC_0111,Web,Low,New,Issue 330,Problem,CAS_00330
+ACC_0111,Web,Medium,New,Issue 331,Feature Request,CAS_00331
+ACC_0098,Web,Low,New,Issue 332,Feature Request,CAS_00332
+ACC_0098,Phone,,Closed,Issue 333,Feature Request,CAS_00333
+ACC_0098,Phone,,Closed,Issue 334,Problem,CAS_00334
+ACC_0037,Web,Low,New,Issue 335,Feature Request,CAS_00335
+ACC_0037,Phone,Low,Closed,Issue 336,Feature Request,CAS_00336
+ACC_0037,Phone,Medium,Closed,Issue 337,Feature Request,CAS_00337
+ACC_0027,Web,Low,Working,Issue 338,,CAS_00338
+ACC_0027,Web,Low,New,Issue 339,Feature Request,CAS_00339
+ACC_0027,Email,Medium,Working,Issue 340,Feature Request,CAS_00340
+ACC_0074,Email,,New,Issue 341,Feature Request,CAS_00341
+ACC_0074,Phone,Low,Closed,,Feature Request,CAS_00342
+ACC_0074,Email,Medium,Closed,Issue 343,Feature Request,CAS_00343
+ACC_0074,Email,High,New,,Problem,CAS_00344
+ACC_0074,Email,Medium,Working,Issue 345,Feature Request,CAS_00345
+ACC_0074,Email,High,Working,,Feature Request,CAS_00346
+ACC_0074,Phone,,Working,Issue 347,,CAS_00347
+ACC_0001,Web,High,Working,,Problem,CAS_00348
+ACC_0001,Web,Low,Working,Issue 349,Feature Request,CAS_00349
+ACC_0001,Phone,Medium,Closed,Issue 350,Feature Request,CAS_00350
+ACC_0001,Web,Medium,Working,Issue 351,,CAS_00351
+ACC_0001,Email,Low,New,Issue 352,,CAS_00352
+ACC_0001,Email,High,Closed,Issue 353,,CAS_00353
+ACC_0001,Web,High,New,Issue 354,Problem,CAS_00354
+ACC_0001,Web,Low,Closed,Issue 355,Feature Request,CAS_00355
+ACC_0001,Web,Low,Closed,Issue 356,Problem,CAS_00356
+ACC_0016,Email,Low,New,Issue 357,Feature Request,CAS_00357
+ACC_0016,Web,,New,Issue 358,Feature Request,CAS_00358
+ACC_0016,Web,Low,Closed,Issue 359,Problem,CAS_00359
+ACC_0016,Email,Medium,New,Issue 360,Feature Request,CAS_00360
+ACC_0016,Email,High,Closed,Issue 361,Problem,CAS_00361
+ACC_0016,Phone,High,New,Issue 362,,CAS_00362
+ACC_0016,Phone,High,New,Issue 363,Problem,CAS_00363
+ACC_0016,Phone,High,Working,Issue 364,Feature Request,CAS_00364
+ACC_0016,Phone,Medium,New,Issue 365,Problem,CAS_00365
+ACC_0011,Phone,Low,Working,Issue 366,Feature Request,CAS_00366
+ACC_0117,Phone,Medium,Working,Issue 367,Feature Request,CAS_00367
+ACC_0117,Web,Medium,New,Issue 368,Problem,CAS_00368
+ACC_0117,Email,Low,Working,Issue 369,Problem,CAS_00369
+ACC_0117,Web,High,Working,Issue 370,,CAS_00370
+ACC_0117,Phone,High,New,Issue 371,Problem,CAS_00371
+ACC_0117,Phone,High,New,,,CAS_00372
+ACC_0117,Phone,High,New,Issue 373,Feature Request,CAS_00373
+ACC_0117,Web,Low,New,Issue 374,Problem,CAS_00374
+ACC_0117,Phone,High,New,Issue 375,,CAS_00375
+ACC_0117,Web,,Working,Issue 376,Problem,CAS_00376
+ACC_0101,Email,Medium,Working,Issue 377,Feature Request,CAS_00377
+ACC_0101,Email,Low,New,Issue 378,Problem,CAS_00378
+ACC_0101,Phone,Low,Closed,Issue 379,Problem,CAS_00379
+ACC_0101,Web,Low,New,Issue 380,Problem,CAS_00380
+ACC_0101,Phone,Low,New,Issue 381,Problem,CAS_00381
+ACC_0101,Web,High,Closed,Issue 382,Feature Request,CAS_00382
+ACC_0101,Email,Low,Closed,Issue 383,Problem,CAS_00383
+ACC_0101,Web,Low,Closed,Issue 384,,CAS_00384
+ACC_0048,Phone,Medium,New,Issue 385,Feature Request,CAS_00385
+ACC_0048,Web,High,Closed,Issue 386,,CAS_00386
+ACC_0026,Web,Low,New,Issue 387,Feature Request,CAS_00387
+ACC_0026,Phone,Low,Closed,Issue 388,Problem,CAS_00388
+ACC_0026,Email,High,New,Issue 389,,CAS_00389
+ACC_0081,Web,Medium,Working,Issue 390,Problem,CAS_00390
+ACC_0081,Phone,Medium,New,,Problem,CAS_00391
+ACC_0081,Phone,Low,Working,Issue 392,Problem,CAS_00392
+ACC_0081,Web,Low,Closed,Issue 393,Problem,CAS_00393
+ACC_0081,Email,High,Working,Issue 394,Feature Request,CAS_00394
+ACC_0081,Web,Medium,Closed,Issue 395,Problem,CAS_00395
+ACC_0081,Phone,High,New,,Problem,CAS_00396
+ACC_0081,Web,Medium,Closed,Issue 397,,CAS_00397
+ACC_0081,Email,High,Closed,Issue 398,Feature Request,CAS_00398
+ACC_0081,Phone,Low,New,,Problem,CAS_00399
+ACC_0022,Web,High,New,Issue 400,Feature Request,CAS_00400
+ACC_0022,Web,Medium,Closed,,,CAS_00401
+ACC_0090,Email,High,New,,,CAS_00402
+ACC_0064,Email,Low,Closed,Issue 403,Feature Request,CAS_00403
+ACC_0040,Web,High,Closed,Issue 404,Feature Request,CAS_00404
+ACC_0040,Phone,Low,New,Issue 405,,CAS_00405
+ACC_0040,Email,High,New,Issue 406,Problem,CAS_00406
+ACC_0040,Email,,Working,Issue 407,Problem,CAS_00407
+ACC_0040,Web,Medium,New,Issue 408,Problem,CAS_00408
+ACC_0088,Email,High,Closed,Issue 409,Feature Request,CAS_00409
+ACC_0088,Web,High,New,,Problem,CAS_00410
+ACC_0088,Phone,High,Working,Issue 411,,CAS_00411
+ACC_0088,Phone,Medium,New,Issue 412,Feature Request,CAS_00412
+ACC_0088,Email,Medium,Closed,Issue 413,Problem,CAS_00413
+ACC_0078,Email,Low,Closed,Issue 414,Problem,CAS_00414
+ACC_0078,Web,Low,New,,Problem,CAS_00415
+ACC_0078,Web,High,Closed,Issue 416,Problem,CAS_00416
+ACC_0078,Email,Medium,New,Issue 417,Problem,CAS_00417
+ACC_0078,Web,High,New,Issue 418,Feature Request,CAS_00418
+ACC_0078,Email,Low,Closed,Issue 419,Feature Request,CAS_00419
+ACC_0078,Phone,Low,Closed,Issue 420,,CAS_00420
+ACC_0031,Phone,Medium,Closed,Issue 421,Problem,CAS_00421
+ACC_0031,Email,Low,New,Issue 422,Problem,CAS_00422
+ACC_0031,Phone,Medium,New,Issue 423,Feature Request,CAS_00423
+ACC_0009,Web,Medium,New,Issue 424,,CAS_00424
+ACC_0009,Phone,High,Working,Issue 425,Feature Request,CAS_00425
+ACC_0009,Web,High,New,Issue 426,Feature Request,CAS_00426
+ACC_0009,Phone,Medium,New,Issue 427,Problem,CAS_00427
+ACC_0009,Phone,Low,Closed,,Problem,CAS_00428
+ACC_0009,Web,Low,Closed,Issue 429,Feature Request,CAS_00429
+ACC_0009,Web,High,Closed,Issue 430,Problem,CAS_00430
+ACC_0009,Email,Low,New,Issue 431,Feature Request,CAS_00431
+ACC_0110,Web,Low,Closed,Issue 432,Feature Request,CAS_00432
+ACC_0110,Web,Medium,Closed,Issue 433,Problem,CAS_00433
+ACC_0110,Web,,New,Issue 434,Feature Request,CAS_00434
+ACC_0110,Web,Medium,Closed,Issue 435,Problem,CAS_00435
+ACC_0110,Web,High,Closed,Issue 436,Feature Request,CAS_00436
+ACC_0110,Email,Low,Closed,Issue 437,Problem,CAS_00437
+ACC_0110,Web,,New,Issue 438,Feature Request,CAS_00438
+ACC_0110,Phone,High,New,Issue 439,Feature Request,CAS_00439
+ACC_0110,Phone,Medium,Closed,Issue 440,Problem,CAS_00440
+ACC_0013,Web,Low,New,Issue 441,,CAS_00441
+ACC_0013,Web,Medium,New,Issue 442,Problem,CAS_00442
+ACC_0013,Web,,New,Issue 443,Problem,CAS_00443
+ACC_0013,Web,Low,New,Issue 444,,CAS_00444
+ACC_0013,Phone,Medium,Closed,Issue 445,Feature Request,CAS_00445
+ACC_0013,Phone,,Closed,Issue 446,Problem,CAS_00446
+ACC_0013,Web,Medium,New,Issue 447,Problem,CAS_00447
+ACC_0013,Web,Low,Working,Issue 448,Feature Request,CAS_00448
+ACC_0013,Web,High,Closed,,Problem,CAS_00449

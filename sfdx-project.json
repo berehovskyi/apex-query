@@ -1,0 +1,30 @@
+{
+    "packageDirectories": [
+        {
+            "default": true,
+            "package": "apex-query",
+            "path": "sfdx-source/apex-query",
+            "versionName": "ver 0.1",
+            "versionNumber": "0.1.0.NEXT"
+        },
+        {
+            "package": "apex-sql-query",
+            "path": "sfdx-source/apex-sql-query",
+            "versionName": "ver 0.1",
+            "versionNumber": "0.1.0.NEXT",
+            "dependencies": [
+                {
+                    "package": "apex-query",
+                    "versionNumber": "0.1.0.LATEST"
+                }
+            ]
+        }
+    ],
+    "name": "apex-query",
+    "packageAliases": {
+        "apex-query": "0HoJ50000000022KAA",
+        "apex-sql-query": "0HoJ50000000027KAA",
+        "apex-query@latest": "04tJ5000000D9ZrIAK",
+        "apex-sql-query@latest": "04tJ5000000D9ZwIAK"
+    }
+}
