@@ -443,6 +443,19 @@ private class SqlQueryTest {
     }
 
     @IsTest
+    static void should_escape_inline_sql_strings_with_doubled_apostrophes() {
+        // Arrange
+        String maliciousValue = 'x\' OR TRUE --';
+        SqlQuery q = new TestSqlQuery('customers').field('id').wherex(SqlQuery.COND.field('name').eq(maliciousValue));
+
+        // Act
+        String inlineSql = q.toInlineString();
+
+        // Assert
+        Assert.areEqual('SELECT id FROM customers WHERE name = \'x\'\' OR TRUE --\'', inlineSql);
+    }
+
+    @IsTest
     static void should_handle_aggregate_convenience_methods() {
         // Arrange & Act
         SqlQuery q1 = new TestSqlQuery('orders').countAll();

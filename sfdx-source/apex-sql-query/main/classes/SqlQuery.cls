@@ -230,6 +230,20 @@ public virtual inherited sharing class SqlQuery extends Query implements Builder
     // </editor-fold>
 
     // <editor-fold desc="SQL Functions">
+    public static String formatSqlValue(final Object value) {
+        if (value instanceof String) {
+            return '\'' + value.toString().replace('\'', '\'\'') + '\'';
+        }
+        if (value instanceof Iterable<Object>) {
+            List<String> formatted = new List<String>();
+            for (Object item : (Iterable<Object>) value) {
+                formatted.add(formatSqlValue(item));
+            }
+            return '(' + String.join(formatted, ', ') + ')';
+        }
+        return Query.formatValue(value);
+    }
+
     /**
      * Wraps a value to be treated as a verbatim literal (unquoted/raw) in SQL expressions.
      * Use this to reference columns in helpers or conditions where strings are otherwise auto-quoted.
@@ -246,18 +260,18 @@ public virtual inherited sharing class SqlQuery extends Query implements Builder
     public static Object cast(final Object value, final String type) {
         validateNotNull(value, 'value');
         validateNotBlank(type, 'type');
-        return new LiteralValue('CAST(' + Query.formatValue(value) + ' AS ' + type + ')');
+        return new LiteralValue('CAST(' + formatSqlValue(value) + ' AS ' + type + ')');
     }
 
     public static Object dateTrunc(final String part, final Object value) {
         validateNotBlank(part, 'part');
         validateNotNull(value, 'value');
-        return new LiteralValue('DATE_TRUNC(\'' + part + '\', ' + Query.formatValue(value) + ')');
+        return new LiteralValue('DATE_TRUNC(\'' + part + '\', ' + formatSqlValue(value) + ')');
     }
 
     public static Object coalesce(final Object val1, final Object val2) {
         validateNotNull(val1, 'val1');
-        return new LiteralValue('COALESCE(' + Query.formatValue(val1) + ', ' + Query.formatValue(val2) + ')');
+        return new LiteralValue('COALESCE(' + formatSqlValue(val1) + ', ' + formatSqlValue(val2) + ')');
     }
 
     public static Object coalesce(final List<Object> values) {
@@ -265,19 +279,19 @@ public virtual inherited sharing class SqlQuery extends Query implements Builder
         validateIsTrue(!values.isEmpty(), 'values cannot be empty');
         List<String> args = new List<String>();
         for (Object value : values) {
-            args.add(Query.formatValue(value));
+            args.add(formatSqlValue(value));
         }
         return new LiteralValue('COALESCE(' + String.join(args, ', ') + ')');
     }
 
     public static Object upper(final Object value) {
         validateNotNull(value, 'value');
-        return new LiteralValue('UPPER(' + Query.formatValue(value) + ')');
+        return new LiteralValue('UPPER(' + formatSqlValue(value) + ')');
     }
 
     public static Object lower(final Object value) {
         validateNotNull(value, 'value');
-        return new LiteralValue('LOWER(' + Query.formatValue(value) + ')');
+        return new LiteralValue('LOWER(' + formatSqlValue(value) + ')');
     }
 
     public static Criterion exists(final SqlQuery subquery) {
@@ -1050,6 +1064,10 @@ public virtual inherited sharing class SqlQuery extends Query implements Builder
             }
         }
 
+        protected override String formatValue(final Object value) {
+            return SqlQuery.formatSqlValue(value);
+        }
+
         public virtual Query.Junction add(final Query.Criterion condition) {
             return new Query.Junction().add(this).add(condition);
         }
@@ -1458,7 +1476,7 @@ public virtual inherited sharing class SqlQuery extends Query implements Builder
             if (boundContext != null) {
                 return (boundContext.isNamed() ? ':' : '') + boundContext.add(value);
             }
-            return Query.formatValue(value);
+            return SqlQuery.formatSqlValue(value);
         }
     }
 
@@ -2095,7 +2113,7 @@ public virtual inherited sharing class SqlQuery extends Query implements Builder
                     if (boundContext != null) {
                         valStrings.add((boundContext.isNamed() ? ':' : '') + boundContext.add(value));
                     } else {
-                        valStrings.add(Query.formatValue(value));
+                        valStrings.add(SqlQuery.formatSqlValue(value));
                     }
                 }
                 result.add('(' + String.join(valStrings, ', ') + ')');

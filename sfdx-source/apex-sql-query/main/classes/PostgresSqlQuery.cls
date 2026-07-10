@@ -116,7 +116,7 @@ public virtual inherited sharing class PostgresSqlQuery extends SqlQuery {
     public static Object castColon(Object value, String type) {
         validateNotNull(value, 'value');
         validateNotBlank(type, 'type');
-        return SqlQuery.literal(Query.formatValue(value) + '::' + type);
+        return SqlQuery.literal(SqlQuery.formatSqlValue(value) + '::' + type);
     }
 
     /**
