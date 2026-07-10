@@ -58,7 +58,7 @@ public virtual inherited sharing class MySqlQuery extends SqlQuery {
      */
     public static Object groupConcat(Object value) {
         validateNotNull(value, 'value');
-        return SqlQuery.literal('GROUP_CONCAT(' + Query.formatValue(value) + ')');
+        return SqlQuery.literal('GROUP_CONCAT(' + SqlQuery.formatSqlValue(value) + ')');
     }
 
     /**
@@ -71,7 +71,7 @@ public virtual inherited sharing class MySqlQuery extends SqlQuery {
         validateNotNull(value, 'value');
         validateNotNull(separator, 'separator');
         return SqlQuery.literal(
-            'GROUP_CONCAT(' + Query.formatValue(value) + ' SEPARATOR ' + Query.formatValue(separator) + ')'
+            'GROUP_CONCAT(' + SqlQuery.formatSqlValue(value) + ' SEPARATOR ' + SqlQuery.formatSqlValue(separator) + ')'
         );
     }
 
@@ -84,7 +84,9 @@ public virtual inherited sharing class MySqlQuery extends SqlQuery {
     public static Object dateFormat(Object value, String format) {
         validateNotNull(value, 'value');
         validateNotBlank(format, 'format');
-        return SqlQuery.literal('DATE_FORMAT(' + Query.formatValue(value) + ', ' + Query.formatValue(format) + ')');
+        return SqlQuery.literal(
+            'DATE_FORMAT(' + SqlQuery.formatSqlValue(value) + ', ' + SqlQuery.formatSqlValue(format) + ')'
+        );
     }
 
     /**
@@ -96,7 +98,9 @@ public virtual inherited sharing class MySqlQuery extends SqlQuery {
     public static Object jsonExtract(Object jsonDoc, String path) {
         validateNotNull(jsonDoc, 'jsonDoc');
         validateNotBlank(path, 'path');
-        return SqlQuery.literal('JSON_EXTRACT(' + Query.formatValue(jsonDoc) + ', ' + Query.formatValue(path) + ')');
+        return SqlQuery.literal(
+            'JSON_EXTRACT(' + SqlQuery.formatSqlValue(jsonDoc) + ', ' + SqlQuery.formatSqlValue(path) + ')'
+        );
     }
 
     /**
