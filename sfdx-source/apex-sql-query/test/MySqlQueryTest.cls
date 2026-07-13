@@ -40,6 +40,28 @@ private class MySqlQueryTest {
     }
 
     @IsTest
+    static void should_order_cte_bindings_before_main_bindings_in_count_query() {
+        // Arrange
+        MySqlQuery activeUsers = MySqlQuery.of('users');
+        activeUsers.field('id').addConditionEq('status', 'ACTIVE');
+        MySqlQuery q = MySqlQuery.of('active_users');
+        q.with('active_users', activeUsers).addConditionEq('region', 'EMEA');
+
+        // Act
+        String sql = q.toCountString();
+        Map<String, Object> binds = q.getCountBindings();
+
+        // Assert
+        Assert.areEqual(
+            'WITH active_users AS (SELECT id FROM users WHERE status = ?) ' +
+            'SELECT COUNT(*) FROM active_users WHERE region = ?',
+            sql
+        );
+        Assert.areEqual('ACTIVE', binds.get('?1'), 'First placeholder belongs to the CTE');
+        Assert.areEqual('EMEA', binds.get('?2'), 'Second placeholder belongs to the main query');
+    }
+
+    @IsTest
     static void should_render_mysql_condition_operators_when_using_mysql_condition() {
         // Arrange
         MySqlQuery q = MySqlQuery.of('users');

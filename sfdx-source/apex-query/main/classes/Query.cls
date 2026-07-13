@@ -15,6 +15,10 @@ public abstract class Query implements Builder, Bindable {
     protected abstract List<Part> buildCount(BindContext targetContext);
     protected abstract List<Part> build(BindContext targetContext);
 
+    protected virtual String getCountPrefix(final BindContext targetContext) {
+        return '';
+    }
+
     public Boolean isDebugEnabled() {
         return isDebugEnabled;
     }
@@ -117,7 +121,7 @@ public abstract class Query implements Builder, Bindable {
         if (targetContext != null && !isSubQuery) {
             targetContext.clear();
         }
-        String query = 'SELECT ' + getCountSelectPart();
+        String query = getCountPrefix(targetContext) + 'SELECT ' + getCountSelectPart();
         for (Part fragment : buildCount(targetContext)) {
             if (fragment.isEmpty()) {
                 continue;

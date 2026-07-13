@@ -1339,8 +1339,8 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
         validateIsTrue(fields.iterator().hasNext(), 'fields cannot be empty');
     }
 
-    private static void validateFieldSet(final String fieldSet) {
-        validateIsTrue(fieldSet != null, 'FieldSet ' + fieldSet + ' not found');
+    private static void validateFieldSet(final String fieldSet, final FieldSet resolvedFieldSet) {
+        validateIsTrue(resolvedFieldSet != null, 'FieldSet ' + fieldSet + ' not found');
     }
 
     private static void validateFunction(final String function) {
@@ -2169,7 +2169,7 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
                 );
             }
             FieldSet fs = ((DescribeSObjectResult) describe).fieldSets.getMap().get(fieldSet);
-            validateFieldSet(fieldSet);
+            validateFieldSet(fieldSet, fs);
             for (FieldSetMember field : fs.getFields()) {
                 add(field.getFieldPath());
             }
