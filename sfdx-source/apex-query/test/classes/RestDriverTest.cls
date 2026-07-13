@@ -65,6 +65,44 @@ private class RestDriverTest {
     }
 
     @IsTest
+    static void should_reject_null_or_blank_named_credential_for_rest_driver() {
+        for (String invalidCredential : new List<String>{ null, '   ' }) {
+            try {
+                new SoqlQuery.RestDriver(invalidCredential);
+                Assert.fail('Expected QueryException for invalid Named Credential');
+            } catch (Query.QueryException e) {
+                Assert.isTrue(e.getMessage().contains('namedCredential cannot be'));
+            }
+        }
+    }
+
+    @IsTest
+    static void should_reject_permission_set_access_mode_for_rest_driver() {
+        // Arrange
+        AccessLevel permissionSetMode;
+        try {
+            permissionSetMode = AccessLevel.USER_MODE.withPermissionSetId([SELECT Id FROM PermissionSet LIMIT 1].Id);
+        } catch (System.SecurityException unsupportedFeature) {
+            return;
+        }
+        MockRest mock = new MockRest();
+        mock.addResponse(
+            '/services/data/v66.0/query/?q=SELECT+Id+FROM+Account',
+            '{"totalSize":0,"done":true,"records":[]}'
+        );
+        Test.setMock(HttpCalloutMock.class, mock);
+        SoqlQuery q = SoqlQuery.of('Account').field('Id').withMode(permissionSetMode).useRestDriver('MyOrg');
+
+        // Act & Assert
+        try {
+            q.fetch();
+            Assert.fail('Expected QueryException for unsupported REST access mode');
+        } catch (Query.QueryException e) {
+            Assert.areEqual('RestDriver requires AccessLevel.USER_MODE exactly.', e.getMessage());
+        }
+    }
+
+    @IsTest
     static void should_execute_rest_query_via_tooling_when_enabled() {
         // Arrange
         MockRest mock = new MockRest();
@@ -1100,7 +1138,7 @@ private class RestDriverTest {
             JSON.serialize(parentPage)
         );
         mock.addResponse('/grandchild/next', JSON.serialize(grandChildPage2));
-        SoqlQuery.QueryArgs queryArgs = new SoqlQuery.QueryArgs(query, query, null, null);
+        SoqlQuery.QueryArgs queryArgs = new SoqlQuery.QueryArgs(query, query, null, AccessLevel.USER_MODE);
         queryArgs.listType = List<Map<String, Object>>.class;
         queryArgs.subQueryHierarchy = new Map<String, Set<String>>{
             '' => new Set<String>{ 'Contacts' },

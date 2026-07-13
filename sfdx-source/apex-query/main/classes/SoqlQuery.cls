@@ -3807,6 +3807,7 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
         protected Query.Timer timerMode = Query.Timer.SYS;
 
         public RestDriver(final String namedCredential) {
+            validateNotBlank(namedCredential, 'namedCredential');
             this.namedCredential = namedCredential;
         }
 
@@ -3907,10 +3908,8 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
         }
 
         private void requireUserMode(AccessLevel accessMode) {
-            if (accessMode == AccessLevel.SYSTEM_MODE) {
-                throw new QueryException(
-                    'RestDriver requires AccessLevel.USER_MODE because REST resources always run in user mode.'
-                );
+            if (accessMode != AccessLevel.USER_MODE) {
+                throw new QueryException('RestDriver requires AccessLevel.USER_MODE exactly.');
             }
         }
 
