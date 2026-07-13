@@ -645,6 +645,12 @@ Executes queries within the current Salesforce org using native `Database` metho
     - `withoutSharing()`: Bypasses the sharing model.
     - `inheritedSharing()`: Inherits sharing from the caller (**Default**).
 
+> [!NOTE]
+> Bindings supplied through `withBindings(...)` are merged after generated bindings. If a user binding has the same
+> key as a generated binding, the user value intentionally takes precedence. Generated names such as `var$0` are
+> positional implementation details and can change when query conditions are reordered, so prefer distinct,
+> descriptive names for raw-condition bindings rather than relying on generated names as a stable override API.
+
 #### 2. REST Driver
 
 Executes queries against a remote Salesforce org via the REST API. This is ideal for cross-org integrations or secondary data sources.
@@ -659,6 +665,13 @@ Executes queries against a remote Salesforce org via the REST API. This is ideal
 
 - **Setup**: Requires a **Named Credential** to handle authentication and endpoint resolution.
 - **Security Constraint**: Always executes in `USER_MODE`. Attempting to use `withSystemMode()` will throw an exception.
+
+> [!IMPORTANT]
+> `withBindings(...)` is supported only by the default Database Driver. Salesforce REST query resources accept
+> complete inline SOQL and do not accept Apex bind variables or a bindings map. Do not use raw conditions such as
+> `wherex('Name = :name').withBindings(...)` with a REST driver; the unresolved token is sent as-is and the REST API
+> rejects the query. Use typed condition methods such as `addConditionEq('Name', name)` or
+> `addConditionIn('Id', ids)`, which safely format values for REST execution.
 
 ```apex
 // Explicitly using a REST Driver
@@ -783,15 +796,23 @@ List<Map<String, Object>> rows = (List<Map<String, Object>>) SoqlQuery.of('Accou
 
 | Method                     | Returns                     | Description                                                      |
 | :------------------------- | :-------------------------- | :--------------------------------------------------------------- |
-| `fetch()`                  | `List<SObject>`             | Executes the query and returns all rows.                         |
+| `fetch()`                  | `List<SObject>`             | Executes the query and returns rows loaded by the active driver. |
 | `fetchFirst()`             | `SObject`                   | Returns the first record or null.                                |
-| `fetchCount()`             | `Integer`                   | Executes a `COUNT()` variant of the query.                       |
+| `fetchCount()`             | `Integer`                   | Counts source records using a `COUNT()` variant of the query.    |
 | `fetchInto(Type listType)` | `List<T>`                   | Projects into typed DTO/SObject; DTO keys normalize `__` to `_`. |
 | `fetchLazy()`              | `Iterable<SObject>`         | Returns an iterator for chunked/lazy processing.                 |
 | `locator()`                | `Database.QueryLocator`     | Returns a locator for Batch Apex.                                |
 | `cursor()`                 | `Database.Cursor`           | Returns an Apex Cursor for high-volume processing.               |
 | `paginationCursor()`       | `Database.PaginationCursor` | Returns a Pagination Cursor for stateful UI paging.              |
 | `explain()`                | `Object`                    | Returns Query Plans (REST Driver only).                          |
+
+> [!NOTE]
+> REST `QueryEngine` and `BulkV2QueryEngine` return only the first result page by default. Configure the selected engine with `setQueryMore(true)` when `fetch()`, `fetchInto(...)`, or their lazy variants should follow continuation pages. Database-driver execution is not affected by this REST pagination setting.
+
+> [!NOTE]
+> SOQL `fetchCount()` counts source records; it does not count grouped aggregate result rows. `GROUP BY` and `HAVING`
+> are excluded from the generated count query because Salesforce does not allow `COUNT()` with `GROUP BY`. Execute
+> the aggregate query with `fetch()` when grouped results are required.
 
 ### Introspection & Debugging
 
