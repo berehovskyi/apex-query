@@ -1,9 +1,6 @@
 name: 'Validate Pull Request'
 
 on:
-  push:
-    branches:
-      - main
   pull_request:
     branches:
       - main
@@ -17,10 +14,6 @@ on:
 
 jobs:
   test:
-    # Avoid duplicate execution after PR merge:
-    # - run always for pull_request/workflow_dispatch
-    # - for push, run only on initial branch creation push (before = all zeros)
-    if: ${{ github.event_name != 'push' || github.event.before == '0000000000000000000000000000000000000000' }}
     runs-on: ubuntu-latest
 
     steps:
@@ -162,7 +155,9 @@ jobs:
           echo "CDP E2E required: $has_apex_cdp"
 
       - name: Create Auth File
-        run: echo ${{ secrets.SF_DEV_HUB_AUTH_URL }} > authFile
+        env:
+          SF_DEV_HUB_AUTH_URL: ${{ secrets.SF_DEV_HUB_AUTH_URL }}
+        run: printf '%s' "$SF_DEV_HUB_AUTH_URL" > authFile
 
       - name: Authorize DevHub
         run: sf org login sfdx-url -f authFile -d
@@ -227,7 +222,7 @@ jobs:
           bash e2e/run_e2e.sh --packages apex-cdp-query --org "${{ secrets.SF_DATACLOUD_ORG_ALIAS }}"
 
       - name: Delete Scratch Org
-        if: steps.create_scratch_org.outcome == 'success'
+        if: always() && steps.create_scratch_org.outcome == 'success'
         run: sf org delete scratch -o TestOrg -p
 
       - name: Delete Auth File
