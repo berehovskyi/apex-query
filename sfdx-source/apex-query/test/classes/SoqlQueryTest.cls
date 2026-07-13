@@ -1536,6 +1536,58 @@ private class SoqlQueryTest {
     }
 
     @IsTest
+    static void should_project_local_database_rows_into_dtos() {
+        // Arrange
+        insert new Account(Name = 'Local DTO');
+
+        // Act
+        List<Object> rows = SoqlQuery.of(Account.SObjectType)
+            .fields('Id, Name')
+            .addConditionEq('Name', 'Local DTO')
+            .fetchInto(List<QueryAccountDto>.class);
+
+        // Assert
+        Assert.areEqual(1, rows.size());
+        Assert.isTrue(rows[0] instanceof QueryAccountDto, 'fetchInto should return the requested DTO type');
+        Assert.areEqual('Local DTO', ((QueryAccountDto) rows[0]).Name);
+    }
+
+    @IsTest
+    static void should_project_first_local_database_row_into_a_dto() {
+        // Arrange
+        insert new Account(Name = 'Local First DTO');
+
+        // Act
+        Object row = SoqlQuery.of(Account.SObjectType)
+            .fields('Id, Name')
+            .addConditionEq('Name', 'Local First DTO')
+            .fetchFirstAs(QueryAccountDto.class);
+
+        // Assert
+        Assert.isTrue(row instanceof QueryAccountDto, 'fetchFirstAs should return the requested DTO type');
+        Assert.areEqual('Local First DTO', ((QueryAccountDto) row).Name);
+    }
+
+    @IsTest
+    static void should_project_lazy_local_database_rows_into_dtos() {
+        // Arrange
+        insert new Account(Name = 'Local Lazy DTO');
+        Iterable<Object> rows = SoqlQuery.of(Account.SObjectType)
+            .fields('Id, Name')
+            .addConditionEq('Name', 'Local Lazy DTO')
+            .fetchLazyInto(List<QueryAccountDto>.class);
+
+        // Act
+        Iterator<Object> iterator = rows.iterator();
+        Assert.isTrue(iterator.hasNext(), 'Expected a local database row');
+        Object row = iterator.next();
+
+        // Assert
+        Assert.isTrue(row instanceof QueryAccountDto, 'fetchLazyInto should return the requested DTO type');
+        Assert.areEqual('Local Lazy DTO', ((QueryAccountDto) row).Name);
+    }
+
+    @IsTest
     static void should_call_run_more_on_driver_when_fetching_lazy() {
         // Arrange
         MockDriver mock = new MockDriver();
