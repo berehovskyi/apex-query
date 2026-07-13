@@ -1893,7 +1893,7 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
         private final String name;
         private final Integer value;
         private DateLiteral(final String name) {
-            this.value = value;
+            this.name = name;
         }
         private DateLiteral(final String name, final Integer value) {
             validateNotNull(value, 'n');
