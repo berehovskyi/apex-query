@@ -106,6 +106,7 @@ private class CdpSqlQueryTest {
         Assert.isTrue(mock.lastEndpoint.contains('/ssot/query-sql?'));
         Assert.isTrue(mock.lastEndpoint.contains('dataspace=default'));
         Assert.areEqual('POST', mock.lastMethod);
+        Assert.areEqual(1, mock.callCount, 'A fetch must send exactly one REST request');
 
         Map<String, Object> payload = (Map<String, Object>) JSON.deserializeUntyped(mock.lastBody);
         String sql = (String) payload.get('sql');
@@ -169,6 +170,7 @@ private class CdpSqlQueryTest {
 
         // Assert
         Assert.areEqual(7, count);
+        Assert.areEqual(1, mock.callCount, 'A count must send exactly one REST request');
         Map<String, Object> payload = (Map<String, Object>) JSON.deserializeUntyped(mock.lastBody);
         String sql = (String) payload.get('sql');
         Assert.isTrue(sql.startsWith('SELECT COUNT(*)'));
@@ -419,6 +421,7 @@ private class CdpSqlQueryTest {
         private String lastEndpoint;
         private String lastMethod;
         private String lastBody;
+        private Integer callCount = 0;
 
         private MockRest(Integer statusCode, String responseBody) {
             this.statusCode = statusCode;
@@ -426,6 +429,7 @@ private class CdpSqlQueryTest {
         }
 
         public HttpResponse respond(HttpRequest req) {
+            callCount++;
             lastEndpoint = req.getEndpoint();
             lastMethod = req.getMethod();
             lastBody = req.getBody();
