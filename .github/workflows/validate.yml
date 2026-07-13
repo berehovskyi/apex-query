@@ -7,6 +7,12 @@ on:
   pull_request:
     branches:
       - main
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - labeled
+      - unlabeled
   workflow_dispatch:
 
 jobs:
@@ -172,14 +178,14 @@ jobs:
         run: sf apex run test -o TestOrg -l RunLocalTests -w 10
 
       - name: Run Local E2E Tests
-        if: steps.packages.outputs.has_local == '1'
+        if: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'e2e') && steps.packages.outputs.has_local == '1' }}
         shell: bash
         run: |
           set -euo pipefail
           bash e2e/run_e2e.sh --packages "${{ steps.packages.outputs.local_packages }}" --org TestOrg
 
       - name: Authorize DataCloud Org (JWT)
-        if: steps.packages.outputs.has_cdp == '1'
+        if: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'e2e') && steps.packages.outputs.has_cdp == '1' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -214,7 +220,7 @@ jobs:
             --alias "${{ secrets.SF_DATACLOUD_ORG_ALIAS }}"
 
       - name: Run CDP E2E Tests
-        if: steps.packages.outputs.has_cdp == '1'
+        if: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'e2e') && steps.packages.outputs.has_cdp == '1' }}
         shell: bash
         run: |
           set -euo pipefail

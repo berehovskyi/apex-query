@@ -99,6 +99,7 @@ fi
 
 has_apex_query=0
 has_apex_sql=0
+has_apex_cdp=0
 run_soql=0
 run_soql_external=0
 run_sql=0
@@ -118,7 +119,10 @@ if [[ -n "${selected[apex-sql-query]:-}" ]]; then
     run_sql=1
 fi
 if [[ -n "${selected[apex-cdp-query]:-}" ]]; then
-    # DataCloud org is treated as preconfigured; run tests only
+    # CDP depends on both the core query and SQL packages at deployment/runtime
+    has_apex_query=1
+    has_apex_sql=1
+    has_apex_cdp=1
     run_cdp=1
 fi
 
@@ -136,11 +140,17 @@ fi
 if [[ $has_apex_sql -eq 1 ]]; then
     deploy_args+=(-d sfdx-source/apex-sql-query)
 fi
+if [[ $has_apex_cdp -eq 1 ]]; then
+    deploy_args+=(-d sfdx-source/apex-cdp-query)
+fi
 if [[ $run_soql -eq 1 ]]; then
     deploy_args+=(-d e2e/main/soql)
 fi
 if [[ $run_sql -eq 1 ]]; then
     deploy_args+=(-d e2e/main/sql)
+fi
+if [[ $run_cdp -eq 1 ]]; then
+    deploy_args+=(-d e2e/main/cdp)
 fi
 
 if [[ ${#deploy_args[@]} -gt 0 ]]; then
