@@ -264,7 +264,6 @@ public virtual inherited sharing class CdpSqlQuery extends PostgresSqlQuery {
             req.setMethod('POST');
             req.setHeader('Content-Type', 'application/json');
             req.setBody(JSON.serialize(new Map<String, Object>{ 'sql' => args.inlineQuery }));
-            send(req, 'queryRequest');
             HttpResponse res = send(req, 'queryRequest');
             final Integer code = res.getStatusCode();
             if (code < 200 || code >= 300) {
