@@ -644,22 +644,22 @@ public virtual inherited sharing class SqlQuery extends Query implements Builder
         return this;
     }
 
-    public SqlQuery fetchFirst(final Integer count) {
+    public virtual SqlQuery fetchFirst(final Integer count) {
         fetchClause.set('FIRST', count, false);
         return this;
     }
 
-    public SqlQuery fetchFirstWithTies(final Integer count) {
+    public virtual SqlQuery fetchFirstWithTies(final Integer count) {
         fetchClause.set('FIRST', count, true);
         return this;
     }
 
-    public SqlQuery fetchNext(final Integer count) {
+    public virtual SqlQuery fetchNext(final Integer count) {
         fetchClause.set('NEXT', count, false);
         return this;
     }
 
-    public SqlQuery fetchNextWithTies(final Integer count) {
+    public virtual SqlQuery fetchNextWithTies(final Integer count) {
         fetchClause.set('NEXT', count, true);
         return this;
     }
@@ -846,6 +846,7 @@ public virtual inherited sharing class SqlQuery extends Query implements Builder
     }
 
     protected virtual override List<Query.Part> build(final BindContext targetContext) {
+        validateRowLimiting();
         withClause.withBindContext(targetContext);
         selects.withBindContext(targetContext);
         whereClause.withBindContext(targetContext);
@@ -875,6 +876,7 @@ public virtual inherited sharing class SqlQuery extends Query implements Builder
     }
 
     protected override List<Query.Part> buildCount(final BindContext targetContext) {
+        validateRowLimiting();
         withClause.withBindContext(targetContext);
         selects.withBindContext(targetContext);
         whereClause.withBindContext(targetContext);
@@ -905,6 +907,11 @@ public virtual inherited sharing class SqlQuery extends Query implements Builder
     private static void validateFields(Iterable<Object> fields) {
         validateIsTrue(fields != null, 'fields cannot be null');
         validateIsTrue(fields.iterator().hasNext(), 'fields cannot be empty');
+    }
+
+    private void validateRowLimiting() {
+        validateIsTrue(lim.isEmpty() || fetchClause.isEmpty(), 'LIMIT and FETCH clauses cannot be combined');
+        validateIsTrue(!fetchClause.hasWithTies() || !ordersBy.isEmpty(), 'WITH TIES requires ORDER BY');
     }
 
     private static String formatOrder(Object element, Query.SortOrder sortOrder, Query.NullsOrder nullsOrder) {
@@ -1204,7 +1211,8 @@ public virtual inherited sharing class SqlQuery extends Query implements Builder
         private String bindValue(Object value) {
             if (
                 !boundContext.isNamed() &&
-                (operator == 'IN' || operator == 'NOT IN') &&
+                (operator == 'IN' ||
+                operator == 'NOT IN') &&
                 value instanceof Iterable<Object>
             ) {
                 List<String> placeholders = new List<String>();
@@ -1627,7 +1635,7 @@ public virtual inherited sharing class SqlQuery extends Query implements Builder
         private Boolean isDistinct = false;
 
         public void distinct() {
-            this.isDistinct = true;
+            isDistinct = true;
         }
 
         public Boolean hasDistinct() {
@@ -1970,6 +1978,10 @@ public virtual inherited sharing class SqlQuery extends Query implements Builder
 
         public Boolean isEmpty() {
             return type == null;
+        }
+
+        private Boolean hasWithTies() {
+            return !isEmpty() && withTies;
         }
 
         private void set(String type, Integer count, Boolean withTies) {

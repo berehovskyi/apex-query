@@ -13,6 +13,8 @@
  */
 @SuppressWarnings('PMD.ApexDoc')
 public virtual inherited sharing class MySqlQuery extends SqlQuery {
+    private static final String UNSUPPORTED_FETCH_MESSAGE = 'FETCH FIRST/NEXT is not supported by MySQL; use lim()/offset() instead';
+
     /**
      * Creates a MySQL query for a table and enables anonymous bindings (`?`).
      * @param table source table name
@@ -49,6 +51,22 @@ public virtual inherited sharing class MySqlQuery extends SqlQuery {
      */
     public static MySqlQuery of(String table, String alias) {
         return new MySqlQuery(table, alias);
+    }
+
+    public override SqlQuery fetchFirst(final Integer count) {
+        throw new Query.QueryException(UNSUPPORTED_FETCH_MESSAGE);
+    }
+
+    public override SqlQuery fetchFirstWithTies(final Integer count) {
+        throw new Query.QueryException(UNSUPPORTED_FETCH_MESSAGE);
+    }
+
+    public override SqlQuery fetchNext(final Integer count) {
+        throw new Query.QueryException(UNSUPPORTED_FETCH_MESSAGE);
+    }
+
+    public override SqlQuery fetchNextWithTies(final Integer count) {
+        throw new Query.QueryException(UNSUPPORTED_FETCH_MESSAGE);
     }
 
     /**

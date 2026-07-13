@@ -192,5 +192,16 @@ private class MySqlQueryTest {
         Assert.areEqual('^john', byObjectField.getBindings().get('?1'));
         Assert.areEqual('SELECT * FROM users WHERE 1 = 1', byRawSql);
     }
+
+    @IsTest
+    static void should_reject_unsupported_fetch_clause() {
+        // Act & Assert
+        try {
+            MySqlQuery.of('users').fetchFirst(5).toString();
+            Assert.fail('Expected MySQL FETCH syntax to be rejected');
+        } catch (Query.QueryException e) {
+            Assert.areEqual('FETCH FIRST/NEXT is not supported by MySQL; use lim()/offset() instead', e.getMessage());
+        }
+    }
     // </editor-fold>
 }
