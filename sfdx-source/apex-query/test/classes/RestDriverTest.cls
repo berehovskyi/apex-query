@@ -26,6 +26,35 @@ private class RestDriverTest {
     }
 
     @IsTest
+    static void should_preserve_all_rows_text_inside_rest_query_literal() {
+        // Arrange
+        String expectedQuery = 'SELECT Name FROM Account WHERE Name = \'Acme ALL ROWS\'';
+        String expectedPath = '/services/data/v66.0/query/?q=' + EncodingUtil.urlEncode(expectedQuery, 'UTF-8');
+        String corruptedPath =
+            '/services/data/v66.0/queryAll/?q=' +
+            EncodingUtil.urlEncode('SELECT Name FROM Account WHERE Name = \'Acme\'', 'UTF-8');
+        String response = '{"totalSize":1, "done":true, "records":[{"attributes":{"type":"Account"}, "Name":"Acme ALL ROWS"}]}';
+        MockRest mock = new MockRest();
+        mock.addResponse(expectedPath, response);
+        mock.addResponse(corruptedPath, response);
+        Test.setMock(HttpCalloutMock.class, mock);
+
+        SoqlQuery q = SoqlQuery.of('Account')
+            .field('Name')
+            .addConditionEq('Name', 'Acme ALL ROWS')
+            .useRestDriver('MyOrg');
+
+        // Act
+        Test.startTest();
+        q.fetch();
+        Test.stopTest();
+
+        // Assert
+        Assert.isTrue(mock.hasRequestedPath(expectedPath), 'Text inside a string literal must remain unchanged');
+        Assert.isFalse(mock.hasRequestedPath(corruptedPath), 'Literal text must not select the queryAll resource');
+    }
+
+    @IsTest
     static void should_validate_api_version_format_for_rest_driver() {
         try {
             new SoqlQuery.RestDriver('MyOrg').setApiVersion('66.0');
@@ -217,6 +246,38 @@ private class RestDriverTest {
         Assert.isNotNull(payload);
         Assert.isTrue(payload.contains('"operation":"queryAll"'));
         Assert.isFalse(payload.toLowerCase().contains(' all rows'));
+    }
+
+    @IsTest
+    static void should_strip_only_trailing_all_rows_from_bulk_v2_query() {
+        // Arrange
+        MockRest mock = new MockRest();
+        mock.addResponse('/services/data/v66.0/jobs/query', '{"id":"750TEST004B"}');
+        mock.addResponse('/services/data/v66.0/jobs/query/750TEST004B', '{"id":"750TEST004B","state":"JobComplete"}');
+        mock.addResponse('/services/data/v66.0/jobs/query/750TEST004B/results', '"Id"' + '\n' + '"001000000000004AAA"');
+        Test.setMock(HttpCalloutMock.class, mock);
+
+        SoqlQuery q = SoqlQuery.of('Account')
+            .field('Id')
+            .addConditionEq('Name', 'Acme ALL ROWS')
+            .allRows()
+            .useDriver(new SoqlQuery.RestDriver('MyOrg').useEngine(new SoqlQuery.BulkV2QueryEngine()));
+
+        // Act
+        Test.startTest();
+        q.fetchInto(List<Map<String, Object>>.class);
+        Test.stopTest();
+
+        // Assert
+        Map<String, Object> payload = (Map<String, Object>) JSON.deserializeUntyped(
+            mock.getRequestBody('/services/data/v66.0/jobs/query')
+        );
+        Assert.areEqual('queryAll', payload.get('operation'));
+        Assert.areEqual(
+            'SELECT Id FROM Account WHERE Name = \'Acme ALL ROWS\'',
+            payload.get('query'),
+            'Only the terminal ALL ROWS clause should be stripped'
+        );
     }
 
     @IsTest
@@ -598,6 +659,35 @@ private class RestDriverTest {
 
         // Assert
         Assert.areEqual(42, count);
+    }
+
+    @IsTest
+    static void should_preserve_all_rows_text_inside_rest_count_literal() {
+        // Arrange
+        String expectedQuery = 'SELECT COUNT() FROM Account WHERE Name = \'Acme ALL ROWS\'';
+        String expectedPath = '/services/data/v66.0/queryAll/?q=' + EncodingUtil.urlEncode(expectedQuery, 'UTF-8');
+        String corruptedPath =
+            '/services/data/v66.0/queryAll/?q=' +
+            EncodingUtil.urlEncode('SELECT COUNT() FROM Account WHERE Name = \'Acme\'', 'UTF-8');
+        String response = '{"totalSize":1, "done":true, "records":[]}';
+        MockRest mock = new MockRest();
+        mock.addResponse(expectedPath, response);
+        mock.addResponse(corruptedPath, response);
+        Test.setMock(HttpCalloutMock.class, mock);
+
+        SoqlQuery q = SoqlQuery.of('Account')
+            .addConditionEq('Name', 'Acme ALL ROWS')
+            .allRows()
+            .useDriver(new SoqlQuery.RestDriver('MyOrg'));
+
+        // Act
+        Test.startTest();
+        q.fetchCount();
+        Test.stopTest();
+
+        // Assert
+        Assert.isTrue(mock.hasRequestedPath(expectedPath), 'Count must preserve text inside a string literal');
+        Assert.isFalse(mock.hasRequestedPath(corruptedPath), 'Count must strip only the terminal ALL ROWS clause');
     }
 
     @IsTest

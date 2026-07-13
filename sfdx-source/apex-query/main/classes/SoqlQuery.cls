@@ -3079,6 +3079,16 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
         String resolveQueryResource(Boolean allRows);
     }
 
+    private class RestQuery {
+        public final Boolean allRows;
+        public final String query;
+
+        private RestQuery(final String query) {
+            this.query = query.replaceAll('(?i)\\s+ALL ROWS\\s*$', '');
+            this.allRows = this.query != query;
+        }
+    }
+
     /**
      * REST Query engine backed by `/query` and `/queryAll` resources.
      *
@@ -3203,11 +3213,11 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
         }
 
         public virtual Integer count(final RestDriver driver, final QueryArgs args) {
-            String resource = resolveQueryResource(args.inlineQuery.containsIgnoreCase(' ALL ROWS'));
-            String finalQuery = args.inlineQuery.replaceAll('(?i) ALL ROWS', '');
+            RestQuery restQuery = new RestQuery(args.inlineQuery);
+            String resource = resolveQueryResource(restQuery.allRows);
             HttpResponse res = send(
                 driver,
-                driver.getBaseEndpoint() + resource + '/?q=' + EncodingUtil.urlEncode(finalQuery, 'UTF-8')
+                driver.getBaseEndpoint() + resource + '/?q=' + EncodingUtil.urlEncode(restQuery.query, 'UTF-8')
             );
             Map<String, Object> body = (Map<String, Object>) JSON.deserializeUntyped(res.getBody());
             return (Integer) body.get('totalSize');
@@ -3515,8 +3525,7 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
         }
 
         protected virtual String createJob(final RestDriver driver, final String query) {
-            Boolean allRows = query.containsIgnoreCase(' ALL ROWS');
-            String finalQuery = query.replaceAll('(?i) ALL ROWS', '');
+            RestQuery restQuery = new RestQuery(query);
             String basePath = driver.getBaseEndpoint() + 'jobs/query';
             HttpRequest req = new HttpRequest();
             req.setMethod('POST');
@@ -3525,7 +3534,10 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
             req.setHeader('Accept', 'application/json');
             req.setBody(
                 JSON.serialize(
-                    new Map<String, Object>{ 'operation' => allRows ? 'queryAll' : 'query', 'query' => finalQuery }
+                    new Map<String, Object>{
+                        'operation' => restQuery.allRows ? 'queryAll' : 'query',
+                        'query' => restQuery.query
+                    }
                 )
             );
 
@@ -4308,9 +4320,9 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
             isSequentialQueryMoreEngine = engine.queryMoreEngineType == SoqlQuery.QueryMoreEngine.QUERY;
             queryMoreEngine = engine.createQueryMoreEngine(driver, args);
 
-            String resource = engine.resolveQueryResource(args.inlineQuery.containsIgnoreCase(' ALL ROWS'));
-            String finalQuery = args.inlineQuery.replaceAll('(?i) ALL ROWS', '');
-            nextUrl = driver.getBaseEndpoint() + resource + '/?q=' + EncodingUtil.urlEncode(finalQuery, 'UTF-8');
+            RestQuery restQuery = new RestQuery(args.inlineQuery);
+            String resource = engine.resolveQueryResource(restQuery.allRows);
+            nextUrl = driver.getBaseEndpoint() + resource + '/?q=' + EncodingUtil.urlEncode(restQuery.query, 'UTF-8');
         }
 
         public Boolean hasNext() {
