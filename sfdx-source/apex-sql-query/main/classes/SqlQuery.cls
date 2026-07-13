@@ -1188,7 +1188,7 @@ public virtual inherited sharing class SqlQuery extends Query implements Builder
             } else if (value instanceof LiteralValue) {
                 result = value.toString();
             } else if (boundContext != null) {
-                result = (boundContext.isNamed() ? ':' : '') + boundContext.add(value);
+                result = bindValue(value);
             } else {
                 result = formatValue(value);
             }
@@ -1199,6 +1199,22 @@ public virtual inherited sharing class SqlQuery extends Query implements Builder
                 return field + ' BETWEEN ' + result + ' AND ' + result2;
             }
             return field + ' ' + operator + ' ' + result;
+        }
+
+        private String bindValue(Object value) {
+            if (
+                !boundContext.isNamed() &&
+                (operator == 'IN' || operator == 'NOT IN') &&
+                value instanceof Iterable<Object>
+            ) {
+                List<String> placeholders = new List<String>();
+                for (Object item : (Iterable<Object>) value) {
+                    placeholders.add(boundContext.add(item));
+                }
+                return '(' + String.join(placeholders, ', ') + ')';
+            }
+
+            return (boundContext.isNamed() ? ':' : '') + boundContext.add(value);
         }
 
         private Boolean isEmptyIterable(Object value) {

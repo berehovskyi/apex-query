@@ -113,6 +113,29 @@ private class PostgresSqlQueryTest {
     }
 
     @IsTest
+    static void should_expand_collection_predicates_into_indexed_placeholders() {
+        // Arrange
+        PostgresSqlQuery q = PostgresSqlQuery.of('customers');
+        q.wherex(new SqlQuery.Condition().field('country').inx(new List<String>{ 'US', 'CA' }));
+        q.addCondition(new SqlQuery.Condition().field('status').notIn(new List<String>{ 'blocked', 'deleted' }));
+
+        // Act
+        String sql = q.toString();
+        Map<String, Object> binds = q.getBindings();
+
+        // Assert
+        Assert.areEqual(
+            'SELECT * FROM customers WHERE country IN ($1, $2) AND status NOT IN ($3, $4)',
+            sql
+        );
+        Assert.areEqual(4, binds.size());
+        Assert.areEqual('US', binds.get('$1'));
+        Assert.areEqual('CA', binds.get('$2'));
+        Assert.areEqual('blocked', binds.get('$3'));
+        Assert.areEqual('deleted', binds.get('$4'));
+    }
+
+    @IsTest
     static void should_render_cast_colon_helper() {
         // Arrange
         PostgresSqlQuery q = PostgresSqlQuery.of('events');
