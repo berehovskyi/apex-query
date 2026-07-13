@@ -1373,6 +1373,26 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
         }
     }
 
+    private static Boolean requiresDatabaseProjection(final Type listType) {
+        Type targetType = elementType(listType);
+        return targetType != Object.class && !isSObjectLikeType(targetType);
+    }
+
+    private static List<Object> projectDatabaseRows(final List<Object> records, final Type listType) {
+        if (!requiresDatabaseProjection(listType)) {
+            return records;
+        }
+
+        Type targetType = elementType(listType);
+        Object untypedRecords = JSON.deserializeUntyped(JSON.serialize(records));
+        if (targetType == Map<String, Object>.class) {
+            return (List<Object>) untypedRecords;
+        }
+
+        Object normalizedRecords = normalizeDtoKeys(untypedRecords);
+        return (List<Object>) JSON.deserialize(JSON.serialize(normalizedRecords), listType);
+    }
+
     @TestVisible
     private static Iterable<SObject> createCursorIterable(final Cursor cursor) {
         return new CursorIterable(cursor);
@@ -2719,9 +2739,10 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
                 result = driver.run(args);
                 putInCache(key, result);
             }
-            return (accessType == null || driver instanceof RestDriver)
+            List<Object> securedResult = (accessType == null || driver instanceof RestDriver)
                 ? result
                 : Security.stripInaccessible(accessType, (List<SObject>) result).getRecords();
+            return driver instanceof DatabaseDriver ? projectDatabaseRows(securedResult, listType) : securedResult;
         }
 
         private Iterable<Object> runMore(Type listType) {
@@ -2910,7 +2931,11 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
         }
 
         public virtual Iterable<Object> runMore(final QueryArgs args) {
-            return new CursorIterable(new DatabaseCursor(cursor(args)));
+            Cursor localCursor = new DatabaseCursor(cursor(args));
+            if (requiresDatabaseProjection(args.listType)) {
+                return new ProjectedCursorIterable(localCursor, args.listType);
+            }
+            return new CursorIterable(localCursor);
         }
 
         public virtual Integer count(final QueryArgs args) {
@@ -3915,6 +3940,58 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
 
         public Iterator<SObject> iterator() {
             return new CursorIterator(cursor);
+        }
+    }
+
+    private class ProjectedCursorIterable implements Iterable<Object> {
+        private final Cursor cursor;
+        private final Type listType;
+
+        private ProjectedCursorIterable(Cursor cursor, Type listType) {
+            this.cursor = cursor;
+            this.listType = listType;
+        }
+
+        public Iterator<Object> iterator() {
+            return new ProjectedCursorIterator(cursor, listType);
+        }
+    }
+
+    private class ProjectedCursorIterator implements Iterator<Object> {
+        private final Cursor cursor;
+        private final Type listType;
+        private final Integer batchSize = 2000;
+        private List<Object> currentBatch;
+        private Integer index = 0;
+        private Integer offset = 0;
+
+        private ProjectedCursorIterator(Cursor cursor, Type listType) {
+            this.cursor = cursor;
+            this.listType = listType;
+        }
+
+        public Boolean hasNext() {
+            return index < (currentBatch?.size() ?? 0) || offset < cursor.getNumRecords();
+        }
+
+        public Object next() {
+            if (index >= (currentBatch?.size() ?? 0)) {
+                fetch();
+            }
+            return currentBatch[index++];
+        }
+
+        private void fetch() {
+            final Integer count = Math.min(batchSize, cursor.getNumRecords() - offset);
+            if (count > 0) {
+                List<Object> records = new List<Object>();
+                records.addAll(cursor.fetch(offset, count));
+                currentBatch = projectDatabaseRows(records, listType);
+                offset += count;
+                index = 0;
+            } else {
+                currentBatch = new List<Object>();
+            }
         }
     }
 
