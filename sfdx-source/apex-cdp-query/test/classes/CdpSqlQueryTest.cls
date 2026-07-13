@@ -212,6 +212,26 @@ private class CdpSqlQueryTest {
     }
 
     @IsTest
+    static void should_fetch_count_from_status_when_data_is_empty() {
+        Assert.areEqual(7, fetchRestCount('{"data":[],"status":{"rowCount":7}}'));
+    }
+
+    @IsTest
+    static void should_fetch_count_from_status_when_first_data_row_is_empty() {
+        Assert.areEqual(8, fetchRestCount('{"data":[[]],"status":{"rowCount":8}}'));
+    }
+
+    @IsTest
+    static void should_fetch_count_from_status_when_data_count_is_null() {
+        Assert.areEqual(9, fetchRestCount('{"data":[[null]],"status":{"rowCount":9}}'));
+    }
+
+    @IsTest
+    static void should_fetch_count_from_status_when_data_row_is_not_a_list() {
+        Assert.areEqual(10, fetchRestCount('{"data":[{}],"status":{"rowCount":10}}'));
+    }
+
+    @IsTest
     static void should_return_zero_when_rest_count_has_no_data_and_no_row_count() {
         // Arrange
         SqlQuery q = CdpSqlQuery.of('ssot__Individual__dlm')
@@ -373,6 +393,14 @@ private class CdpSqlQueryTest {
         } catch (Query.QueryException e) {
             Assert.isTrue(e.getMessage().contains('Data Cloud REST query failed: (500)'));
         }
+    }
+
+    private static Integer fetchRestCount(String responseBody) {
+        SqlQuery q = CdpSqlQuery.of('ssot__Individual__dlm')
+            .useRestDriver('DataCloudNC')
+            .wherex(new SqlQuery.Condition().field('Name').eq('John'));
+        Test.setMock(HttpCalloutMock.class, new MockRest(200, responseBody));
+        return q.fetchCount();
     }
 
     private static ConnectApi.CdpQueryOutputV2 buildOutput(List<List<Object>> rows, Map<String, Integer> fieldOrder) {
