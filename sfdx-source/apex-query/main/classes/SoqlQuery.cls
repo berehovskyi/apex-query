@@ -497,6 +497,7 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
      * // result: SELECT Id, (SELECT LastName FROM Contacts) FROM Account
      */
     public SoqlQuery subQuery(final String relationshipName, final Query.Builder subQuery) {
+        validateIsTrue(subQuery == null || subQuery instanceof SoqlQuery, 'subQuery must be a SoqlQuery');
         subQueries.add(relationshipName, (SoqlQuery) subQuery);
         return this;
     }

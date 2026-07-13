@@ -3407,6 +3407,45 @@ private class SqlQueryTest {
     }
 
     @IsTest
+    static void should_reject_sql_builder_as_soql_subquery() {
+        // Act & Assert
+        try {
+            SoqlQuery.of('Account').subQuery('Contacts', new TestSqlQuery('contact'));
+            Assert.fail('Should have thrown QueryException');
+        } catch (Query.QueryException e) {
+            Assert.areEqual('subQuery must be a SoqlQuery', e.getMessage());
+        }
+    }
+
+    @IsTest
+    static void should_reject_soql_builder_as_sql_cte() {
+        // Arrange
+        SqlQuery q = new TestSqlQuery('account');
+
+        // Act & Assert
+        try {
+            q.with('contacts', SoqlQuery.of('Contact').field('Id'));
+            Assert.fail('Should have thrown QueryException');
+        } catch (Query.QueryException e) {
+            Assert.areEqual('subquery must be a SqlQuery', e.getMessage());
+        }
+    }
+
+    @IsTest
+    static void should_reject_soql_builder_as_sql_set_operand() {
+        // Arrange
+        SqlQuery q = new TestSqlQuery('account');
+
+        // Act & Assert
+        try {
+            q.union(SoqlQuery.of('Account').field('Id'));
+            Assert.fail('Should have thrown QueryException');
+        } catch (Query.QueryException e) {
+            Assert.areEqual('other must be a SqlQuery', e.getMessage());
+        }
+    }
+
+    @IsTest
     static void should_throw_exception_on_invalid_values_inputs() {
         // Arrange
         SqlQuery q = new TestSqlQuery('dummy');

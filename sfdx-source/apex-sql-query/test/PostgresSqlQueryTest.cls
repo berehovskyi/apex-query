@@ -367,6 +367,20 @@ private class PostgresSqlQueryTest {
     }
 
     @IsTest
+    static void should_reject_soql_builder_as_lateral_subquery() {
+        // Arrange
+        PostgresSqlQuery q = PostgresSqlQuery.of('orders', 'o');
+
+        // Act & Assert
+        try {
+            q.joinLateral(SoqlQuery.of('OrderItem').field('Id'), 'li');
+            Assert.fail('Should have thrown QueryException');
+        } catch (Query.QueryException e) {
+            Assert.areEqual('subquery must be a SqlQuery', e.getMessage());
+        }
+    }
+
+    @IsTest
     static void should_throw_exception_when_natural_used_after_lateral_join() {
         // Arrange
         PostgresSqlQuery lateral = PostgresSqlQuery.of('line_items');

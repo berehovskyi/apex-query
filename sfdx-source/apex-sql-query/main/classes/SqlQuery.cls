@@ -945,6 +945,7 @@ public virtual inherited sharing class SqlQuery extends Query implements Builder
     }
 
     protected SqlQuery addLateralJoin(String type, Query.Builder subquery, String alias) {
+        validateIsTrue(subquery == null || subquery instanceof SqlQuery, 'subquery must be a SqlQuery');
         joins.add(new JoinClause(type, (SqlQuery) subquery, alias, true));
         return this;
     }
@@ -1608,6 +1609,7 @@ public virtual inherited sharing class SqlQuery extends Query implements Builder
         public void add(final String name, final Query.Builder q) {
             validateNotBlank(name, 'name');
             validateNotNull(q, 'subquery');
+            validateIsTrue(q instanceof SqlQuery, 'subquery must be a SqlQuery');
             expressions.put(name, (SqlQuery) q);
         }
 
@@ -1882,6 +1884,7 @@ public virtual inherited sharing class SqlQuery extends Query implements Builder
         public void add(final String type, final Query.Builder other) {
             validateNotBlank(type, 'type');
             validateNotNull(other, 'other');
+            validateIsTrue(other instanceof SqlQuery, 'other must be a SqlQuery');
             this.operators.add(new SetOperator(type, (SqlQuery) other));
         }
 
