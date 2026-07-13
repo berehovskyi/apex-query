@@ -833,12 +833,12 @@ public virtual inherited sharing class SqlQuery extends Query implements Builder
         return 'SELECT ' + getCountSelectPart() + ' FROM (' + buildQueryString(targetContext) + ') AS count_wrapper';
     }
 
-    public override String buildCountQueryString(final BindContext targetContext) {
-        String mainQuery = super.buildCountQueryString(targetContext);
-        if (!withClause.isEmpty()) {
-            return withClause.toString() + ' ' + mainQuery;
+    protected override String getCountPrefix(final BindContext targetContext) {
+        if (withClause.isEmpty()) {
+            return '';
         }
-        return mainQuery;
+        withClause.withBindContext(targetContext);
+        return withClause.toString() + ' ';
     }
 
     protected override String getCountSelectPart() {

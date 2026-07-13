@@ -1042,17 +1042,14 @@ private class SoqlQueryTest {
     static void should_fail_on_invalid_field_set() {
         // Arrange
         SoqlQuery q = SoqlQuery.of(Account.SObjectType);
-        Exception actualException;
 
-        // Act
+        // Act & Assert
         try {
             q.fieldSet('0NonExistentFieldSet0');
-        } catch (Exception e) {
-            actualException = e;
+            Assert.fail('Expected QueryException for a missing FieldSet');
+        } catch (Query.QueryException e) {
+            Assert.areEqual('FieldSet 0NonExistentFieldSet0 not found', e.getMessage());
         }
-
-        // Assert
-        Assert.isNotNull(actualException, 'Should fail for invalid field set');
     }
 
     @IsTest
