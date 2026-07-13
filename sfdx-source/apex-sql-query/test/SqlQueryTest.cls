@@ -2807,6 +2807,61 @@ private class SqlQueryTest {
     }
 
     @IsTest
+    static void should_ignore_limit_when_building_total_count() {
+        // Arrange
+        SqlQuery q = new TestSqlQuery('account').field('Id').lim(10);
+
+        // Act
+        String sql = q.toCountString();
+
+        // Assert
+        Assert.areEqual('SELECT COUNT(*) FROM account', sql);
+    }
+
+    @IsTest
+    static void should_ignore_offset_when_building_total_count() {
+        // Arrange
+        SqlQuery q = new TestSqlQuery('account').field('Id').offset(20);
+
+        // Act
+        String sql = q.toCountString();
+
+        // Assert
+        Assert.areEqual('SELECT COUNT(*) FROM account', sql);
+    }
+
+    @IsTest
+    static void should_ignore_fetch_when_counting_grouped_results() {
+        // Arrange
+        SqlQuery q = new TestSqlQuery('sales').field('Region').groupBy('Region').orderBy('Region').fetchFirst(10);
+
+        // Act
+        String sql = q.toCountString();
+
+        // Assert
+        Assert.areEqual(
+            'SELECT COUNT(*) FROM (SELECT Region FROM sales GROUP BY Region ORDER BY Region) AS count_wrapper',
+            sql
+        );
+    }
+
+    @IsTest
+    static void should_ignore_paging_when_counting_set_operation_results() {
+        // Arrange
+        SqlQuery q = new TestSqlQuery('t1').field('A');
+        q.union(new TestSqlQuery('t2').field('A')).orderBy('A').lim(5).offset(2);
+
+        // Act
+        String sql = q.toCountString();
+
+        // Assert
+        Assert.areEqual(
+            'SELECT COUNT(*) FROM (SELECT A FROM t1 UNION SELECT A FROM t2 ORDER BY A) AS count_wrapper',
+            sql
+        );
+    }
+
+    @IsTest
     static void should_wrap_count_query_when_grouping_and_having_are_present() {
         // Arrange
         SqlQuery q = new TestSqlQuery('sales')

@@ -53,6 +53,7 @@ public virtual inherited sharing class SqlQuery extends Query implements Builder
     private final FetchClause fetchClause = new FetchClause();
     private final ValuesClause valuesList = new ValuesClause();
     private final Context ctx = new Context(this);
+    private Boolean omitRowLimitingForCount = false;
     // </editor-fold>
     @TestVisible
     protected Driver driver;
@@ -830,7 +831,11 @@ public virtual inherited sharing class SqlQuery extends Query implements Builder
             return buildCountQueryString(targetContext);
         }
         // For SET operators, VALUES, and grouped queries (GROUP BY/HAVING), wrap the full query to count rows accurately.
-        return 'SELECT ' + getCountSelectPart() + ' FROM (' + buildQueryString(targetContext) + ') AS count_wrapper';
+        return 'SELECT ' +
+            getCountSelectPart() +
+            ' FROM (' +
+            buildCountSourceQueryString(targetContext) +
+            ') AS count_wrapper';
     }
 
     protected override String getCountPrefix(final BindContext targetContext) {
@@ -869,9 +874,11 @@ public virtual inherited sharing class SqlQuery extends Query implements Builder
         parts.add(havingClause);
         parts.add(setOperators);
         parts.add(ordersBy);
-        parts.add(lim);
-        parts.add(offset);
-        parts.add(fetchClause);
+        if (!omitRowLimitingForCount) {
+            parts.add(lim);
+            parts.add(offset);
+            parts.add(fetchClause);
+        }
         return parts;
     }
 
@@ -893,8 +900,6 @@ public virtual inherited sharing class SqlQuery extends Query implements Builder
         }
         parts.addAll(joins);
         parts.add(whereClause);
-        parts.add(lim);
-        parts.add(offset);
         return parts;
     }
     // </editor-fold>
@@ -967,6 +972,16 @@ public virtual inherited sharing class SqlQuery extends Query implements Builder
             !valuesList.isEmpty() ||
             !groupsBy.isEmpty() ||
             !havingClause.isEmpty();
+    }
+
+    protected String buildCountSourceQueryString(final BindContext targetContext) {
+        Boolean previousValue = omitRowLimitingForCount;
+        omitRowLimitingForCount = true;
+        try {
+            return buildQueryString(targetContext);
+        } finally {
+            omitRowLimitingForCount = previousValue;
+        }
     }
     // </editor-fold>
 

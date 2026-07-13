@@ -155,7 +155,7 @@ public virtual inherited sharing class PostgresSqlQuery extends SqlQuery {
         if (!hasDistinctOn()) {
             return super.toCountString(targetContext);
         }
-        return 'SELECT COUNT(*) FROM (' + buildQueryString(targetContext) + ') AS count_wrapper';
+        return 'SELECT COUNT(*) FROM (' + buildCountSourceQueryString(targetContext) + ') AS count_wrapper';
     }
 
     protected Boolean hasDistinctOn() {

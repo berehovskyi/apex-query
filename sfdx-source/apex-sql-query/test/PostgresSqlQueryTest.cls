@@ -29,7 +29,8 @@ private class PostgresSqlQueryTest {
         q.distinctOn('location')
             .field('location')
             .wherex(new SqlQuery.Condition().field('region').eq('EMEA'))
-            .orderBy('location');
+            .orderBy('location')
+            .lim(10);
 
         // Act
         String countSql = q.toCountString();
@@ -124,10 +125,7 @@ private class PostgresSqlQueryTest {
         Map<String, Object> binds = q.getBindings();
 
         // Assert
-        Assert.areEqual(
-            'SELECT * FROM customers WHERE country IN ($1, $2) AND status NOT IN ($3, $4)',
-            sql
-        );
+        Assert.areEqual('SELECT * FROM customers WHERE country IN ($1, $2) AND status NOT IN ($3, $4)', sql);
         Assert.areEqual(4, binds.size());
         Assert.areEqual('US', binds.get('$1'));
         Assert.areEqual('CA', binds.get('$2'));
