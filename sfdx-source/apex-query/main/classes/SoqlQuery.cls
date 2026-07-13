@@ -1640,11 +1640,20 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
             return this;
         }
 
-        public override String toString() {
+        private Boolean isEmpty() {
             if (!isEnded) {
                 throw new QueryException('TYPEOF clause must be finalized with .end()');
             }
-            if (fieldsBySObjType.size() < 2) {
+            for (String sObjType : fieldsBySObjType.keySet()) {
+                if (sObjType != null && !(fieldsBySObjType.get(sObjType)?.isEmpty() ?? true)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        public override String toString() {
+            if (isEmpty()) {
                 return '';
             }
             List<String> result = new List<String>();
@@ -2200,7 +2209,12 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
         private final Set<TypeOf> typesOf = new Set<TypeOf>();
 
         public Boolean isEmpty() {
-            return typesOf.isEmpty();
+            for (TypeOf typeOf : typesOf) {
+                if (!typeOf.isEmpty()) {
+                    return false;
+                }
+            }
+            return true;
         }
 
         private void add(TypeOf typeOf) {
@@ -2211,9 +2225,12 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
         public override String toString() {
             List<String> args = new List<String>();
             for (TypeOf typeOf : typesOf) {
-                args.add(typeOf.toString());
+                String renderedTypeOf = typeOf.toString();
+                if (String.isNotBlank(renderedTypeOf)) {
+                    args.add(renderedTypeOf);
+                }
             }
-            return ', ' + String.join(args, ', ');
+            return args.isEmpty() ? '' : ', ' + String.join(args, ', ');
         }
     }
 
