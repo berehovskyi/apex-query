@@ -2406,6 +2406,30 @@ private class SoqlQueryTest {
     }
 
     @IsTest
+    static void should_omit_empty_finalized_typeof_from_query() {
+        // Arrange
+        SoqlQuery q = SoqlQuery.of('Account').field('Id').typeOf(new SoqlQuery.TypeOf('Owner').end());
+
+        // Act
+        String soql = q.toString();
+
+        // Assert
+        Assert.areEqual('SELECT Id FROM Account', soql);
+    }
+
+    @IsTest
+    static void should_omit_typeof_when_no_when_fields_were_selected() {
+        // Arrange
+        SoqlQuery q = SoqlQuery.of('Account').field('Id').typeOf(new SoqlQuery.TypeOf('Owner').when('User').end());
+
+        // Act
+        String soql = q.toString();
+
+        // Assert
+        Assert.areEqual('SELECT Id FROM Account', soql);
+    }
+
+    @IsTest
     static void should_handle_iterable_junctions() {
         // Arrange
         List<Query.Criterion> conditions = new List<Query.Criterion>{
