@@ -2907,6 +2907,52 @@ private class SqlQueryTest {
     }
 
     @IsTest
+    static void should_reject_limit_and_fetch_clause_combinations() {
+        // Act & Assert
+        try {
+            new TestSqlQuery('products').lim(10).fetchFirst(5).toString();
+            Assert.fail('Expected LIMIT plus FETCH to be rejected');
+        } catch (Query.QueryException e) {
+            Assert.areEqual('LIMIT and FETCH clauses cannot be combined', e.getMessage());
+        }
+
+        try {
+            new TestSqlQuery('products').fetchNext(5).lim(10).toString();
+            Assert.fail('Expected FETCH plus LIMIT to be rejected');
+        } catch (Query.QueryException e) {
+            Assert.areEqual('LIMIT and FETCH clauses cannot be combined', e.getMessage());
+        }
+
+        Assert.areEqual(
+            'SELECT * FROM products LIMIT 10 OFFSET 5',
+            new TestSqlQuery('products').lim(10).offset(5).toString(),
+            'OFFSET remains valid with LIMIT'
+        );
+        Assert.areEqual(
+            'SELECT * FROM products OFFSET 5 FETCH NEXT 10 ROWS ONLY',
+            new TestSqlQuery('products').offset(5).fetchNext(10).toString(),
+            'OFFSET remains valid with FETCH'
+        );
+    }
+
+    @IsTest
+    static void should_require_order_by_for_fetch_with_ties() {
+        // Act & Assert
+        try {
+            new TestSqlQuery('products').fetchFirstWithTies(5).toString();
+            Assert.fail('Expected WITH TIES without ORDER BY to be rejected');
+        } catch (Query.QueryException e) {
+            Assert.areEqual('WITH TIES requires ORDER BY', e.getMessage());
+        }
+
+        Assert.areEqual(
+            'SELECT * FROM products ORDER BY Price FETCH FIRST 5 ROWS WITH TIES',
+            new TestSqlQuery('products').fetchFirstWithTies(5).orderBy('Price').toString(),
+            'ORDER BY may be configured after FETCH'
+        );
+    }
+
+    @IsTest
     static void should_handle_fetch_first_variations() {
         // Act & Assert
         Assert.areEqual(
