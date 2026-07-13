@@ -287,7 +287,13 @@ public virtual inherited sharing class CdpSqlQuery extends PostgresSqlQuery {
                 return null;
             }
             List<Object> rows = (List<Object>) root.get('data');
+            if (rows.isEmpty() || !(rows[0] instanceof List<Object>)) {
+                return null;
+            }
             List<Object> row = (List<Object>) rows[0];
+            if (row.isEmpty() || row[0] == null) {
+                return null;
+            }
             return Integer.valueOf(String.valueOf(row[0]));
         }
 
