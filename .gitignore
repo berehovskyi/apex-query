@@ -17,3 +17,7 @@ node_modules/
 /.illuminatedCloud/
 **/tsconfig*.json
 **/*.tsbuildinfo
+**/graphql.config.yml
+
+# Local Data Cloud credentials
+/datacloudjwt.*
