@@ -1777,10 +1777,37 @@ private class SoqlQueryTest {
 
     @IsTest
     static void should_provide_common_date_literals() {
-        // Arrange & Act & Assert
-        Assert.isNotNull(SoqlQuery.LIT.yesterday, 'yesterday');
-        Assert.isNotNull(SoqlQuery.LIT.last90Days, 'last90Days');
-        Assert.isNotNull(SoqlQuery.LIT.thisFiscalQuarter, 'thisFiscalQuarter');
+        // Arrange
+        Map<String, SoqlQuery.DateLiteral> literalsByExpectedValue = new Map<String, SoqlQuery.DateLiteral>{
+            'YESTERDAY' => SoqlQuery.LIT.yesterday,
+            'TODAY' => SoqlQuery.LIT.today,
+            'TOMORROW' => SoqlQuery.LIT.tomorrow,
+            'LAST_WEEK' => SoqlQuery.LIT.lastWeek,
+            'THIS_WEEK' => SoqlQuery.LIT.thisWeek,
+            'NEXT_WEEK' => SoqlQuery.LIT.nextWeek,
+            'LAST_MONTH' => SoqlQuery.LIT.lastMonth,
+            'THIS_MONTH' => SoqlQuery.LIT.thisMonth,
+            'NEXT_MONTH' => SoqlQuery.LIT.nextMonth,
+            'LAST_90_DAYS' => SoqlQuery.LIT.last90Days,
+            'NEXT_90_DAYS' => SoqlQuery.LIT.next90Days,
+            'THIS_QUARTER' => SoqlQuery.LIT.thisQuarter,
+            'LAST_QUARTER' => SoqlQuery.LIT.lastQuarter,
+            'NEXT_QUARTER' => SoqlQuery.LIT.nextQuarter,
+            'THIS_YEAR' => SoqlQuery.LIT.thisYear,
+            'LAST_YEAR' => SoqlQuery.LIT.lastYear,
+            'NEXT_YEAR' => SoqlQuery.LIT.nextYear,
+            'THIS_FISCAL_QUARTER' => SoqlQuery.LIT.thisFiscalQuarter,
+            'LAST_FISCAL_QUARTER' => SoqlQuery.LIT.lastFiscalQuarter,
+            'NEXT_FISCAL_QUARTER' => SoqlQuery.LIT.nextFiscalQuarter,
+            'THIS_FISCAL_YEAR' => SoqlQuery.LIT.thisFiscalYear,
+            'LAST_FISCAL_YEAR' => SoqlQuery.LIT.lastFiscalYear,
+            'NEXT_FISCAL_YEAR' => SoqlQuery.LIT.nextFiscalYear
+        };
+
+        // Act & Assert
+        for (String expectedValue : literalsByExpectedValue.keySet()) {
+            Assert.areEqual(expectedValue, literalsByExpectedValue.get(expectedValue).toString(), expectedValue);
+        }
     }
 
     @IsTest
