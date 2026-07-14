@@ -40,18 +40,11 @@ q2.field('pk')
     .lim(5)
     .debug();
 
-try {
-    List<Object> results2 = q2.fetch();
-    System.debug('E2E Test 06.2: ALL');
-    System.debug('Results: ' + results2.size());
-    if (!results2.isEmpty()) {
-        Map<String, Object> firstRow = (Map<String, Object>) results2[0];
-        Integer pk = Integer.valueOf(firstRow.get('pk'));
-        Assert.isTrue(pk > 2, 'pk should be greater than ALL [1, 2]');
-    }
-} catch (Exception e) {
-    System.debug('ALL operator might not be supported by this SQLite version: ' + e.getMessage());
-    // We accept failure if it's a syntax error from backend, as long as SQL generation was correct
-}
+String allSql = q2.toInlineString();
+Assert.isTrue(
+    allSql.contains('pk > ALL (SELECT pk FROM facetable LIMIT 2)'),
+    'Expected quantified ALL subquery: ' + allSql
+);
+System.debug('E2E Test 06.2 SKIPPED: Datasette SQLite does not support the ALL quantified operator.');
 
 System.debug('E2E Test 06 Passed');

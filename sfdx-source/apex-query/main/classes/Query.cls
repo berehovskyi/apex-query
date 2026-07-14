@@ -178,6 +178,36 @@ public abstract class Query implements Builder, Bindable {
         return candidateType == null || candidateType == Map<String, Object>.class || candidateType == Object.class;
     }
 
+    private static String normalizeDtoKey(final String key) {
+        return key.contains('__') ? key.replace('__', '_') : key;
+    }
+
+    public static List<String> normalizeDtoKeyNames(final List<String> sourceKeys) {
+        validateNotNull(sourceKeys, 'sourceKeys');
+        List<String> normalizedKeys = new List<String>();
+        Map<String, String> sourceKeysByNormalizedKey = new Map<String, String>();
+        for (String sourceKey : sourceKeys) {
+            validateNotNull(sourceKey, 'source key');
+            String normalizedKey = normalizeDtoKey(sourceKey);
+            if (sourceKeysByNormalizedKey.containsKey(normalizedKey)) {
+                List<String> collidingKeys = new List<String>{
+                    sourceKeysByNormalizedKey.get(normalizedKey),
+                    sourceKey
+                };
+                collidingKeys.sort();
+                throw new QueryException(
+                    'DTO key normalization collision: ' +
+                        String.join(collidingKeys, ' and ') +
+                        ' both map to ' +
+                        normalizedKey
+                );
+            }
+            sourceKeysByNormalizedKey.put(normalizedKey, sourceKey);
+            normalizedKeys.add(normalizedKey);
+        }
+        return normalizedKeys;
+    }
+
     public static Object normalizeDtoKeys(final Object node) {
         if (node instanceof List<Object>) {
             List<Object> normalizedList = new List<Object>();
@@ -191,9 +221,10 @@ public abstract class Query implements Builder, Bindable {
         }
         Map<String, Object> normalizedMap = new Map<String, Object>();
         Map<String, Object> source = (Map<String, Object>) node;
-        for (String key : source.keySet()) {
-            String normalizedKey = key.contains('__') ? key.replace('__', '_') : key;
-            normalizedMap.put(normalizedKey, normalizeDtoKeys(source.get(key)));
+        List<String> sourceKeys = new List<String>(source.keySet());
+        List<String> normalizedKeys = normalizeDtoKeyNames(sourceKeys);
+        for (Integer i = 0; i < sourceKeys.size(); i++) {
+            normalizedMap.put(normalizedKeys[i], normalizeDtoKeys(source.get(sourceKeys[i])));
         }
         return normalizedMap;
     }

@@ -314,22 +314,27 @@ public virtual inherited sharing class SqlQuery extends Query implements Builder
 
     // <editor-fold desc="GROUPING SETS">
     public static String groupingSets(final Iterable<Object> elements) {
+        validateGroupingElements(elements);
         return 'GROUPING SETS (' + String.join(toStringList(elements), ', ') + ')';
     }
 
     public static String rollup(final Object element) {
+        validateGroupingElement(element);
         return 'ROLLUP (' + element + ')';
     }
 
     public static String rollup(final Iterable<Object> elements) {
+        validateGroupingElements(elements);
         return 'ROLLUP (' + String.join(toStringList(elements), ', ') + ')';
     }
 
     public static String cube(final Object element) {
+        validateGroupingElement(element);
         return 'CUBE (' + element + ')';
     }
 
     public static String cube(final Iterable<Object> elements) {
+        validateGroupingElements(elements);
         return 'CUBE (' + String.join(toStringList(elements), ', ') + ')';
     }
     // </editor-fold>
@@ -914,6 +919,35 @@ public virtual inherited sharing class SqlQuery extends Query implements Builder
         validateIsTrue(fields.iterator().hasNext(), 'fields cannot be empty');
     }
 
+    private static void validateSqlElement(final Object element, final String argName) {
+        validateNotNull(element, argName);
+        if (element instanceof String) {
+            validateNotBlank((String) element, argName);
+        }
+    }
+
+    private static void validateGroupingElement(final Object element) {
+        validateSqlElement(element, 'grouping element');
+    }
+
+    private static void validateGroupingElements(final Iterable<Object> elements) {
+        validateNotNull(elements, 'grouping elements');
+        validateIsTrue(elements.iterator().hasNext(), 'grouping elements cannot be empty');
+        for (Object element : elements) {
+            validateGroupingElement(element);
+        }
+    }
+
+    private static void validateWindowOffset(final Integer offset) {
+        validateNotNull(offset, 'offset');
+        validateIsTrue(offset >= 0, 'offset cannot be negative');
+    }
+
+    private static void validatePositiveWindowArgument(final Integer value, final String argName) {
+        validateNotNull(value, argName);
+        validateIsTrue(value > 0, argName + ' must be greater than zero');
+    }
+
     private void validateRowLimiting() {
         validateIsTrue(lim.isEmpty() || fetchClause.isEmpty(), 'LIMIT and FETCH clauses cannot be combined');
         validateIsTrue(!fetchClause.hasWithTies() || !ordersBy.isEmpty(), 'WITH TIES requires ORDER BY');
@@ -1108,6 +1142,7 @@ public virtual inherited sharing class SqlQuery extends Query implements Builder
         }
 
         public virtual Condition field(final Object field) {
+            validateSqlElement(field, 'field');
             this.field = field;
             return this;
         }
@@ -1316,11 +1351,11 @@ public virtual inherited sharing class SqlQuery extends Query implements Builder
         public WindowBuilder percentRank() { return new WindowBuilder('PERCENT_RANK()'); }
         public WindowBuilder cumeDist() { return new WindowBuilder('CUME_DIST()'); }
         public WindowBuilder lead(final Object element) { return new WindowBuilder('LEAD', element); }
-        public WindowBuilder lead(final Object element, Integer offset) { return new WindowBuilder('LEAD', element, offset); }
+        public WindowBuilder lead(final Object element, Integer offset) { validateWindowOffset(offset); return new WindowBuilder('LEAD', element, offset); }
         public WindowBuilder lag(final Object element) { return new WindowBuilder('LAG', element); }
-        public WindowBuilder lag(final Object element, Integer offset) { return new WindowBuilder('LAG', element, offset); }
-        public WindowBuilder ntile(final Integer n) { return new WindowBuilder('NTILE(' + n + ')'); }
-        public WindowBuilder nthValue(final Object element, Integer n) { return new WindowBuilder('NTH_VALUE(' + element + ', ' + n + ')'); }
+        public WindowBuilder lag(final Object element, Integer offset) { validateWindowOffset(offset); return new WindowBuilder('LAG', element, offset); }
+        public WindowBuilder ntile(final Integer n) { validatePositiveWindowArgument(n, 'n'); return new WindowBuilder('NTILE(' + n + ')'); }
+        public WindowBuilder nthValue(final Object element, Integer n) { validatePositiveWindowArgument(n, 'n'); return new WindowBuilder('NTH_VALUE', element, n); }
         public WindowBuilder firstValue(final Object element) { return new WindowBuilder('FIRST_VALUE', element); }
         public WindowBuilder lastValue(final Object element) { return new WindowBuilder('LAST_VALUE', element); }
         public WindowBuilder avg(final Object element) { return new WindowBuilder('AVG', element); }
@@ -1341,15 +1376,17 @@ public virtual inherited sharing class SqlQuery extends Query implements Builder
         }
 
         private WindowBuilder(String functionName, Object field) {
+            validateSqlElement(field, 'element');
             this.function = functionName + '(' + String.valueOf(field) + ')';
         }
 
         private WindowBuilder(String functionName, Object field, Object literal) {
+            validateSqlElement(field, 'element');
             this.function = functionName + '(' + String.valueOf(field) + ', ' + literal + ')';
         }
 
         public WindowBuilder partitionBy(final String field) {
-            validateNotNull(field, 'field');
+            validateNotBlank(field, 'field');
             partitions.add(field);
             return this;
         }
@@ -1357,6 +1394,7 @@ public virtual inherited sharing class SqlQuery extends Query implements Builder
         public WindowBuilder partitionBy(final Iterable<Object> fields) {
             validateFields(fields);
             for (Object field : fields) {
+                validateSqlElement(field, 'field');
                 partitions.add(field);
             }
             return this;
@@ -1382,11 +1420,15 @@ public virtual inherited sharing class SqlQuery extends Query implements Builder
         }
 
         public WindowBuilder rowsBetween(final Object start, final Object frameEnd) {
+            validateSqlElement(start, 'start');
+            validateSqlElement(frameEnd, 'frameEnd');
             this.frame = 'ROWS BETWEEN ' + formatFrameBound(start) + ' AND ' + formatFrameBound(frameEnd);
             return this;
         }
 
         public WindowBuilder rangeBetween(final Object start, final Object frameEnd) {
+            validateSqlElement(start, 'start');
+            validateSqlElement(frameEnd, 'frameEnd');
             this.frame = 'RANGE BETWEEN ' + formatFrameBound(start) + ' AND ' + formatFrameBound(frameEnd);
             return this;
         }
@@ -1875,11 +1917,12 @@ public virtual inherited sharing class SqlQuery extends Query implements Builder
         }
 
         public void add(final Object element) {
-            validateNotNull(element, 'grouping element');
+            validateGroupingElement(element);
             elements.add(element);
         }
 
         public void addAll(final Iterable<Object> items) {
+            validateGroupingElements(items);
             for (Object item : items) {
                 add(item);
             }

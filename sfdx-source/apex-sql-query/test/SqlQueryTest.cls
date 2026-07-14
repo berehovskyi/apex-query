@@ -2415,6 +2415,62 @@ private class SqlQueryTest {
     }
 
     @IsTest
+    static void should_reject_invalid_window_arguments() {
+        try {
+            SqlQuery.WIN.lead('Salary', null);
+            Assert.fail('Expected null window offset to be rejected');
+        } catch (Query.QueryException e) {
+            Assert.areEqual('offset cannot be null', e.getMessage());
+        }
+
+        try {
+            SqlQuery.WIN.ntile(0);
+            Assert.fail('Expected non-positive NTILE bucket count to be rejected');
+        } catch (Query.QueryException e) {
+            Assert.areEqual('n must be greater than zero', e.getMessage());
+        }
+
+        try {
+            SqlQuery.WIN.nthValue('Salary', 0);
+            Assert.fail('Expected non-positive NTH_VALUE index to be rejected');
+        } catch (Query.QueryException e) {
+            Assert.areEqual('n must be greater than zero', e.getMessage());
+        }
+
+        try {
+            SqlQuery.WIN.sum('Amount').rowsBetween(null, 0);
+            Assert.fail('Expected null frame bound to be rejected');
+        } catch (Query.QueryException e) {
+            Assert.areEqual('start cannot be null', e.getMessage());
+        }
+    }
+
+    @IsTest
+    static void should_reject_invalid_condition_and_grouping_elements() {
+        Object nullField = null;
+        try {
+            new SqlQuery.Condition().field(nullField);
+            Assert.fail('Expected null condition field to be rejected');
+        } catch (Query.QueryException e) {
+            Assert.areEqual('field cannot be null', e.getMessage());
+        }
+
+        try {
+            new TestSqlQuery('sales').groupBy((Object) '   ');
+            Assert.fail('Expected blank grouping element to be rejected');
+        } catch (Query.QueryException e) {
+            Assert.areEqual('grouping element cannot be blank', e.getMessage());
+        }
+
+        try {
+            new TestSqlQuery('sales').groupBy((Iterable<Object>) null);
+            Assert.fail('Expected null grouping elements to be rejected');
+        } catch (Query.QueryException e) {
+            Assert.areEqual('grouping elements cannot be null', e.getMessage());
+        }
+    }
+
+    @IsTest
     static void should_handle_window_frames() {
         // Arrange
         SqlQuery q = new TestSqlQuery('emp');
