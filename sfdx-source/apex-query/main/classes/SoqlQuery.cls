@@ -1581,7 +1581,7 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
 
         public TypeOf then(final String field) {
             validateField(field);
-            validateNotNull(sObjType, 'must call when() before thenField()');
+            validateIsTrue(sObjType != null, 'must call when() before then()');
             fieldsBySObjType.get(sObjType).add(field);
             return this;
         }
@@ -1599,7 +1599,7 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
         public TypeOf thenFields(final String fields) {
             validateFields(fields);
             for (String field : fields.split(',')) {
-                then(field);
+                then(field.trim());
             }
             return this;
         }

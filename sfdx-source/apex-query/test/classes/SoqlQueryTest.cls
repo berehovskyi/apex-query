@@ -423,6 +423,18 @@ private class SoqlQueryTest {
     }
 
     @IsTest
+    static void should_trim_comma_separated_typeof_then_fields() {
+        // Arrange
+        SoqlQuery.TypeOf to = new SoqlQuery.TypeOf('Owner').when('User').thenFields('Alias, Email').end();
+
+        // Act
+        String actual = SoqlQuery.of('Account').typeOf(to).toString();
+
+        // Assert
+        Assert.isTrue(actual.contains('WHEN User THEN Alias, Email'), actual);
+    }
+
+    @IsTest
     static void should_handle_typeof_iterable_else_overload() {
         // Arrange
         SoqlQuery.TypeOf to = new SoqlQuery.TypeOf('Owner')
@@ -452,10 +464,7 @@ private class SoqlQueryTest {
 
         // Assert
         Assert.isNotNull(actualException, 'Should throw exception for missing when()');
-        Assert.isTrue(
-            actualException.getMessage().contains('must call when() before thenField()'),
-            'Validation message'
-        );
+        Assert.areEqual('must call when() before then()', actualException.getMessage());
     }
 
     @IsTest
