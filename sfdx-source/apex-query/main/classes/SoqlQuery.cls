@@ -2737,14 +2737,23 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
 
         private void setAccessType(AccessType type) {
             validateNotNull(type, 'type');
+            validateRestFieldStripping(driver, type);
             accessType = type;
         }
 
         private void setDriver(Driver driver) {
             validateNotNull(driver, 'driver');
             validateIsTrue(!hasExplicitSharing, 'Cannot configure an explicit driver after a sharing mode.');
+            validateRestFieldStripping(driver, accessType);
             this.driver = driver;
             hasExplicitDriver = true;
+        }
+
+        private void validateRestFieldStripping(Driver driver, AccessType type) {
+            validateIsTrue(
+                !(driver instanceof RestDriver) || type == null || type.name() == 'READABLE',
+                'Only READABLE field stripping is supported by the REST driver.'
+            );
         }
 
         private void setSharingDriver(DatabaseDriver driver) {

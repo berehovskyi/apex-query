@@ -1626,6 +1626,45 @@ private class SoqlQueryTest {
     }
 
     @IsTest
+    static void should_reject_strip_after_rest_driver() {
+        // Arrange
+        SoqlQuery q = SoqlQuery.of('Account').useRestDriver('RemoteOrg');
+
+        // Act & Assert
+        try {
+            q.withStrip(AccessType.UPDATABLE);
+            Assert.fail('Should have thrown QueryException');
+        } catch (Query.QueryException e) {
+            Assert.areEqual('Only READABLE field stripping is supported by the REST driver.', e.getMessage());
+        }
+    }
+
+    @IsTest
+    static void should_reject_rest_driver_after_strip() {
+        // Arrange
+        SoqlQuery q = SoqlQuery.of('Account').withStrip(AccessType.UPDATABLE);
+
+        // Act & Assert
+        try {
+            q.useRestDriver('RemoteOrg');
+            Assert.fail('Should have thrown QueryException');
+        } catch (Query.QueryException e) {
+            Assert.areEqual('Only READABLE field stripping is supported by the REST driver.', e.getMessage());
+        }
+    }
+
+    @IsTest
+    static void should_allow_readable_strip_with_rest_driver() {
+        // Act
+        SoqlQuery restThenStrip = SoqlQuery.of('Account').useRestDriver('RemoteOrg').withStrip();
+        SoqlQuery stripThenRest = SoqlQuery.of('Account').withStrip().useRestDriver('RemoteOrg');
+
+        // Assert
+        Assert.isNotNull(restThenStrip, 'REST should rely on the remote user read access');
+        Assert.isNotNull(stripThenRest, 'Configuration order should not affect readable stripping');
+    }
+
+    @IsTest
     static void should_iterate_over_mock_paged_results() {
         // Arrange
         MultiBatchMockDriver mock = new MultiBatchMockDriver();
