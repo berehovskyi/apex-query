@@ -479,6 +479,7 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
      * // result: SELECT Id, TYPEOF Owner WHEN User THEN Alias WHEN Group THEN Name ELSE Subject END FROM Task
      */
     public SoqlQuery typeOf(final TypeOf typeOf) {
+        validateNotNull(typeOf, 'typeOf');
         typesOf.add(typeOf);
         return this;
     }
@@ -1559,6 +1560,7 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
         };
         private String sObjType;
         public TypeOf(final String polymorphicField) {
+            validateField(polymorphicField);
             this.polymorphicField = polymorphicField;
         }
 
@@ -1949,9 +1951,11 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
         private final Location loc;
         private final String unit;
         private GeoPart(SObjectField field, Location loc, DistanceUnit unit) {
-            this(field.toString(), loc, unit);
+            this(field?.toString(), loc, unit);
         }
         private GeoPart(String field, Location loc, DistanceUnit unit) {
+            validateField(field);
+            validateNotNull(loc, 'loc');
             validateNotNull(unit, 'unit');
             this.field = field;
             this.loc = loc;
@@ -1975,6 +1979,8 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
         private final String code;
         private final Decimal value;
         private CurrencyLiteral(String code, Decimal value) {
+            validateNotBlank(code, 'code');
+            validateNotNull(value, 'value');
             this.code = code;
             this.value = value;
         }
@@ -2005,6 +2011,9 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
             return this;
         }
         public override String toString() {
+            validateNotBlank(dataCategoryGroup, 'dataCategoryGroup');
+            validateNotBlank(filteringSelector, 'filteringSelector');
+            validateNotBlank(dataCategory, 'dataCategory');
             return String.format('{0} {1} {2}', new List<Object>{ dataCategoryGroup, filteringSelector, dataCategory });
         }
     }
@@ -2638,10 +2647,11 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
         private final String field;
 
         private DatePart(String function, SObjectField field) {
-            this(function, field.toString());
+            this(function, field?.toString());
         }
 
         private DatePart(String function, String field) {
+            validateField(field);
             this.function = function;
             this.field = field;
         }
@@ -3708,11 +3718,9 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
             List<Boolean> planNested,
             List<List<String>> planTokens
         ) {
+            List<String> normalizedHeaders = normalizeDtoKeys ? normalizeDtoKeyNames(headers) : headers;
             for (Integer i = 0; i < headers.size(); i++) {
-                String key = headers[i];
-                if (normalizeDtoKeys && key.contains('__')) {
-                    key = key.replace('__', '_');
-                }
+                String key = normalizedHeaders[i];
                 Boolean nested = useNestedPaths && key.contains('.');
                 planKeys.add(key);
                 planNested.add(nested);

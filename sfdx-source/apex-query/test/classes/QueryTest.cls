@@ -39,4 +39,19 @@ private class QueryTest {
         // Assert
         Assert.isTrue(elapsed >= 0, 'Elapsed timer should be non-negative');
     }
+
+    @IsTest
+    static void should_reject_dto_key_normalization_collisions() {
+        // Arrange
+        Map<String, Object> source = new Map<String, Object>{ 'a__b' => 'custom', 'a_b' => 'plain' };
+
+        // Act & Assert
+        try {
+            Query.normalizeDtoKeys(source);
+            Assert.fail('Expected normalized DTO key collision');
+        } catch (Query.QueryException e) {
+            Assert.isTrue(e.getMessage().contains('a__b'), e.getMessage());
+            Assert.isTrue(e.getMessage().contains('a_b'), e.getMessage());
+        }
+    }
 }

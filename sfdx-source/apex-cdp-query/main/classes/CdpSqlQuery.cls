@@ -18,8 +18,8 @@
  *
  * List<ssot__Account__dlm> rows = (List<ssot__Account__dlm>) CdpSqlQuery.of('ssot__Account__dlm', 'a')
  *     .useRestDriver('DataCloud')
- *     .field('a.ssot__Id__c', 'account_id')
- *     .field('a.ssot__Name__c', 'account_name')
+ *     .field('a.ssot__Id__c', 'ssot__Id__c')
+ *     .field('a.ssot__Name__c', 'ssot__Name__c')
  *     .lim(5)
  *     .fetchInto(List<ssot__Account__dlm>.class);
  */

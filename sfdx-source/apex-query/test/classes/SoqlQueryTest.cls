@@ -2180,6 +2180,84 @@ private class SoqlQueryTest {
         // Assert
         Assert.areEqual('USD100', actual, 'Currency format');
     }
+
+    @IsTest
+    static void should_reject_invalid_typeof_state() {
+        try {
+            new SoqlQuery.TypeOf(null);
+            Assert.fail('Expected null polymorphic field to be rejected');
+        } catch (Query.QueryException e) {
+            Assert.areEqual('field cannot be null', e.getMessage());
+        }
+
+        try {
+            SoqlQuery.of('Task').typeOf(null);
+            Assert.fail('Expected null TYPEOF builder to be rejected');
+        } catch (Query.QueryException e) {
+            Assert.areEqual('typeOf cannot be null', e.getMessage());
+        }
+    }
+
+    @IsTest
+    static void should_reject_incomplete_category_spec() {
+        try {
+            SoqlQuery.CAT.of('Products').toString();
+            Assert.fail('Expected incomplete category specification to be rejected');
+        } catch (Query.QueryException e) {
+            Assert.areEqual('filteringSelector cannot be null', e.getMessage());
+        }
+    }
+
+    @IsTest
+    static void should_reject_invalid_date_part_fields() {
+        try {
+            SoqlQuery.DT.dayOnly((String) null);
+            Assert.fail('Expected null date field to be rejected');
+        } catch (Query.QueryException e) {
+            Assert.areEqual('field cannot be null', e.getMessage());
+        }
+
+        try {
+            SoqlQuery.DT.dayOnly((SObjectField) null);
+            Assert.fail('Expected null date field token to be rejected');
+        } catch (Query.QueryException e) {
+            Assert.areEqual('field cannot be null', e.getMessage());
+        }
+    }
+
+    @IsTest
+    static void should_reject_invalid_geo_state() {
+        try {
+            SoqlQuery.GEO.distance('BillingAddress', null, SoqlQuery.DistanceUnit.KM);
+            Assert.fail('Expected null location to be rejected');
+        } catch (Query.QueryException e) {
+            Assert.areEqual('loc cannot be null', e.getMessage());
+        }
+
+        try {
+            SoqlQuery.GEO.distance((SObjectField) null, Location.newInstance(0, 0), SoqlQuery.DistanceUnit.KM);
+            Assert.fail('Expected null geo field token to be rejected');
+        } catch (Query.QueryException e) {
+            Assert.areEqual('field cannot be null', e.getMessage());
+        }
+    }
+
+    @IsTest
+    static void should_reject_invalid_currency_literals() {
+        try {
+            SoqlQuery.CUR.of(null, 100);
+            Assert.fail('Expected null currency code to be rejected');
+        } catch (Query.QueryException e) {
+            Assert.areEqual('code cannot be null', e.getMessage());
+        }
+
+        try {
+            SoqlQuery.CUR.of('USD', null);
+            Assert.fail('Expected null currency value to be rejected');
+        } catch (Query.QueryException e) {
+            Assert.areEqual('value cannot be null', e.getMessage());
+        }
+    }
     // </editor-fold>
 
     // <editor-fold desc="Special Coverage & Technical Fixes">
