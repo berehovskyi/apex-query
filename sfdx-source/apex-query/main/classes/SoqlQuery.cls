@@ -1250,7 +1250,7 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
     }
 
     public virtual SoqlQuery useTimer() {
-        return useTimer(Query.Timer.CPU);
+        return useTimer(Query.Timer.SYS);
     }
 
     public virtual SoqlQuery useTimer(final Query.Timer mode) {
