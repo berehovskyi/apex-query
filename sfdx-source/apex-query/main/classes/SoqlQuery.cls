@@ -1104,7 +1104,7 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
      * @return this query
      */
     public SoqlQuery withSharing() {
-        ctx.setDriver(new WithSharingDriver());
+        ctx.setSharingDriver(new WithSharingDriver());
         return this;
     }
 
@@ -1114,7 +1114,7 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
      * @return this query
      */
     public SoqlQuery inheritedSharing() {
-        ctx.setDriver(new InheritedSharingDriver());
+        ctx.setSharingDriver(new InheritedSharingDriver());
         return this;
     }
 
@@ -1124,7 +1124,7 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
      * @return this query
      */
     public SoqlQuery withoutSharing() {
-        ctx.setDriver(new WithoutSharingDriver());
+        ctx.setSharingDriver(new WithoutSharingDriver());
         return this;
     }
 
@@ -2706,6 +2706,8 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
         private AccessLevel accessMode = AccessLevel.USER_MODE;
         private Driver driver = new InheritedSharingDriver();
         private AccessType accessType;
+        private Boolean hasExplicitDriver = false;
+        private Boolean hasExplicitSharing = false;
 
         private Context(SoqlQuery query) {
             this.query = query;
@@ -2739,7 +2741,16 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
         }
 
         private void setDriver(Driver driver) {
+            validateNotNull(driver, 'driver');
+            validateIsTrue(!hasExplicitSharing, 'Cannot configure an explicit driver after a sharing mode.');
             this.driver = driver;
+            hasExplicitDriver = true;
+        }
+
+        private void setSharingDriver(DatabaseDriver driver) {
+            validateIsTrue(!hasExplicitDriver, 'Cannot configure sharing after an explicit driver.');
+            this.driver = driver;
+            hasExplicitSharing = true;
         }
 
         private DescribeProvider getDescribeProvider() {
