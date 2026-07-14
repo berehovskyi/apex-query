@@ -1346,6 +1346,58 @@ private class SqlQueryTest {
     }
 
     @IsTest
+    static void should_render_both_between_literals_as_expressions() {
+        // Arrange
+        SqlQuery q = new TestSqlQuery('products');
+
+        // Act
+        q.wherex(
+            new SqlQuery.Condition()
+                .field('score')
+                .between(SqlQuery.literal('minimum_score'), SqlQuery.literal('maximum_score'))
+        );
+
+        // Assert
+        Assert.areEqual('SELECT * FROM products WHERE score BETWEEN minimum_score AND maximum_score', q.toString());
+        Assert.isTrue(q.getBindings().isEmpty(), 'Literal range bounds must not become bind values');
+    }
+
+    @IsTest
+    static void should_render_both_between_scalar_subqueries_as_expressions() {
+        // Arrange
+        SqlQuery lowerBound = new TestSqlQuery('limits').field('minimum_score');
+        SqlQuery upperBound = new TestSqlQuery('limits').field('maximum_score');
+        SqlQuery q = new TestSqlQuery('products');
+
+        // Act
+        q.wherex(new SqlQuery.Condition().field('score').between(lowerBound, upperBound));
+
+        // Assert
+        Assert.areEqual(
+            'SELECT * FROM products WHERE score BETWEEN (SELECT minimum_score FROM limits) AND (SELECT maximum_score FROM limits)',
+            q.toString()
+        );
+        Assert.isTrue(q.getBindings().isEmpty(), 'Scalar range bounds must not become bind values');
+    }
+
+    @IsTest
+    static void should_reject_null_between_bounds() {
+        try {
+            new SqlQuery.Condition().field('score').between(null, 50);
+            Assert.fail('Expected null lower bound to be rejected');
+        } catch (Query.QueryException e) {
+            Assert.areEqual('lowerBound cannot be null', e.getMessage());
+        }
+
+        try {
+            new SqlQuery.Condition().field('score').between(10, null);
+            Assert.fail('Expected null upper bound to be rejected');
+        } catch (Query.QueryException e) {
+            Assert.areEqual('upperBound cannot be null', e.getMessage());
+        }
+    }
+
+    @IsTest
     static void should_handle_collection_bindings() {
         // Arrange
         SqlQuery q = new TestSqlQuery('users');

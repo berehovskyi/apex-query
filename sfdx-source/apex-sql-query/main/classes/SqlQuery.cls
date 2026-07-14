@@ -1183,10 +1183,12 @@ public virtual inherited sharing class SqlQuery extends Query implements Builder
             return comparand('NOT IN', value);
         }
 
-        public Condition between(final Object val1, final Object val2) {
+        public Condition between(final Object lowerBound, final Object upperBound) {
+            validateNotNull(lowerBound, 'lowerBound');
+            validateNotNull(upperBound, 'upperBound');
             this.operator = 'BETWEEN';
-            this.value = val1;
-            this.value2 = val2;
+            this.value = lowerBound;
+            this.value2 = upperBound;
             return this;
         }
 
@@ -1194,35 +1196,37 @@ public virtual inherited sharing class SqlQuery extends Query implements Builder
             if (String.isNotBlank(raw)) {
                 return raw;
             }
-            String result;
             String renderedOperator = operator;
             if (value == null) {
-                result = 'NULL';
                 if (renderedOperator == '=') {
                     renderedOperator = 'IS';
                 } else if (renderedOperator == '!=') {
                     renderedOperator = 'IS NOT';
                 }
-            } else if (value instanceof SqlQuery) {
-                prepareSubQuery((SqlQuery) value, boundContext);
-                result = '(' + this.value.toString() + ')';
-            } else if (value instanceof QuantifiedSubquery) {
-                prepareSubQuery(((QuantifiedSubquery) value).query, boundContext);
-                result = value.toString();
-            } else if (value instanceof LiteralValue) {
-                result = value.toString();
-            } else if (boundContext != null) {
-                result = bindValue(value);
-            } else {
-                result = formatValue(value);
             }
+            String result = renderOperand(value);
             if (renderedOperator == 'BETWEEN') {
-                String result2 =
-                    (boundContext != null && boundContext.isNamed() ? ':' : '') +
-                    (boundContext != null ? boundContext.add(value2) : formatValue(value2));
-                return field + ' BETWEEN ' + result + ' AND ' + result2;
+                return field + ' BETWEEN ' + result + ' AND ' + renderOperand(value2);
             }
             return field + ' ' + renderedOperator + ' ' + result;
+        }
+
+        private String renderOperand(final Object operand) {
+            if (operand == null) {
+                return 'NULL';
+            }
+            if (operand instanceof SqlQuery) {
+                prepareSubQuery((SqlQuery) operand, boundContext);
+                return '(' + operand.toString() + ')';
+            }
+            if (operand instanceof QuantifiedSubquery) {
+                prepareSubQuery(((QuantifiedSubquery) operand).query, boundContext);
+                return operand.toString();
+            }
+            if (operand instanceof LiteralValue) {
+                return operand.toString();
+            }
+            return boundContext != null ? bindValue(operand) : formatValue(operand);
         }
 
         private String bindValue(Object value) {
