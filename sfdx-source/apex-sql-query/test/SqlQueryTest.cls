@@ -1294,6 +1294,21 @@ private class SqlQueryTest {
     }
 
     @IsTest
+    static void should_not_mutate_null_condition_during_render() {
+        // Arrange
+        SqlQuery.Condition condition = new SqlQuery.Condition().field('deleted_at').eq(null);
+        String stateBeforeRender = JSON.serialize(condition);
+
+        // Act
+        String rendered = condition.toString();
+        String stateAfterRender = JSON.serialize(condition);
+
+        // Assert
+        Assert.areEqual('deleted_at IS NULL', rendered, 'Null equality should render with IS');
+        Assert.areEqual(stateBeforeRender, stateAfterRender, 'Rendering must not rewrite condition state');
+    }
+
+    @IsTest
     static void should_handle_all_condition_operators() {
         // Arrange
         SqlQuery q = new TestSqlQuery('account');

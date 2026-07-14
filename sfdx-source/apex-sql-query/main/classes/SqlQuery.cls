@@ -1195,12 +1195,13 @@ public virtual inherited sharing class SqlQuery extends Query implements Builder
                 return raw;
             }
             String result;
+            String renderedOperator = operator;
             if (value == null) {
                 result = 'NULL';
-                if (operator == '=') {
-                    operator = 'IS';
-                } else if (operator == '!=') {
-                    operator = 'IS NOT';
+                if (renderedOperator == '=') {
+                    renderedOperator = 'IS';
+                } else if (renderedOperator == '!=') {
+                    renderedOperator = 'IS NOT';
                 }
             } else if (value instanceof SqlQuery) {
                 prepareSubQuery((SqlQuery) value, boundContext);
@@ -1215,13 +1216,13 @@ public virtual inherited sharing class SqlQuery extends Query implements Builder
             } else {
                 result = formatValue(value);
             }
-            if (operator == 'BETWEEN') {
+            if (renderedOperator == 'BETWEEN') {
                 String result2 =
                     (boundContext != null && boundContext.isNamed() ? ':' : '') +
                     (boundContext != null ? boundContext.add(value2) : formatValue(value2));
                 return field + ' BETWEEN ' + result + ' AND ' + result2;
             }
-            return field + ' ' + operator + ' ' + result;
+            return field + ' ' + renderedOperator + ' ' + result;
         }
 
         private String bindValue(Object value) {
