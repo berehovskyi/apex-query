@@ -1683,6 +1683,19 @@ private class SoqlQueryTest {
     }
 
     @IsTest
+    static void should_use_sys_timer_by_default() {
+        // Arrange
+        SoqlQuery q = SoqlQuery.of('Account');
+
+        // Act
+        q.useTimer();
+
+        // Assert
+        Assert.isTrue(q.isTimerEnabled(), 'Timer should be enabled');
+        Assert.areEqual(Query.Timer.SYS, q.getTimer(), 'SOQL and SQL should use the same default timer');
+    }
+
+    @IsTest
     static void should_iterate_over_mock_paged_results() {
         // Arrange
         MultiBatchMockDriver mock = new MultiBatchMockDriver();
