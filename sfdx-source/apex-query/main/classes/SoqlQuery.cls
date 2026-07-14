@@ -2198,10 +2198,7 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
         }
 
         public override String toString() {
-            if (fields.isEmpty()) {
-                fields.add('Id');
-            }
-            return 'SELECT ' + String.join(fields, ', ');
+            return fields.isEmpty() ? 'SELECT Id' : 'SELECT ' + String.join(fields, ', ');
         }
     }
 

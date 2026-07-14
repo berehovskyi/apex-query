@@ -1696,6 +1696,19 @@ private class SoqlQueryTest {
     }
 
     @IsTest
+    static void should_not_add_default_id_during_render() {
+        // Arrange
+        SoqlQuery q = SoqlQuery.of('Account');
+
+        // Act
+        q.toString();
+        q.field('Name');
+
+        // Assert
+        Assert.areEqual('SELECT Name FROM Account', q.toString(), 'Previewing must not mutate selected fields');
+    }
+
+    @IsTest
     static void should_iterate_over_mock_paged_results() {
         // Arrange
         MultiBatchMockDriver mock = new MultiBatchMockDriver();
