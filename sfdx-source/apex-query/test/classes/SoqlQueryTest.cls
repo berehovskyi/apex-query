@@ -1191,6 +1191,50 @@ private class SoqlQueryTest {
     }
 
     @IsTest
+    static void should_validate_having_count_fields() {
+        for (String invalidField : new List<String>{ null, '   ' }) {
+            try {
+                SoqlQuery.HAV.count(invalidField);
+                Assert.fail('Expected invalid COUNT field to be rejected');
+            } catch (Query.QueryException e) {
+                Assert.areEqual(
+                    invalidField == null ? 'field cannot be null' : 'field cannot be blank',
+                    e.getMessage()
+                );
+            }
+        }
+
+        try {
+            SoqlQuery.HAV.count((SObjectField) null);
+            Assert.fail('Expected null COUNT field token to be rejected');
+        } catch (Query.QueryException e) {
+            Assert.areEqual('field cannot be null', e.getMessage());
+        }
+    }
+
+    @IsTest
+    static void should_validate_having_count_distinct_fields() {
+        for (String invalidField : new List<String>{ null, '   ' }) {
+            try {
+                SoqlQuery.HAV.countDistinct(invalidField);
+                Assert.fail('Expected invalid COUNT_DISTINCT field to be rejected');
+            } catch (Query.QueryException e) {
+                Assert.areEqual(
+                    invalidField == null ? 'field cannot be null' : 'field cannot be blank',
+                    e.getMessage()
+                );
+            }
+        }
+
+        try {
+            SoqlQuery.HAV.countDistinct((SObjectField) null);
+            Assert.fail('Expected null COUNT_DISTINCT field token to be rejected');
+        } catch (Query.QueryException e) {
+            Assert.areEqual('field cannot be null', e.getMessage());
+        }
+    }
+
+    @IsTest
     static void should_handle_having_raw_string() {
         // Arrange
         SoqlQuery q = SoqlQuery.of('Account').count('Id').groupBy('Type');

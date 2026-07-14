@@ -2015,9 +2015,9 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
         public HavingCondition avg(final SObjectField field) { return avg(field?.toString()); }
         public HavingCondition avg(final String field) { validateField(field); return set('AVG(' + field + ')'); }
         public HavingCondition count(final SObjectField field) { return count(field?.toString()); }
-        public HavingCondition count(final String field) { return set('COUNT(' + field + ')'); }
+        public HavingCondition count(final String field) { validateField(field); return set('COUNT(' + field + ')'); }
         public HavingCondition countDistinct(final SObjectField field) { return countDistinct(field?.toString()); }
-        public HavingCondition countDistinct(final String field) { return set('COUNT_DISTINCT(' + field + ')'); }
+        public HavingCondition countDistinct(final String field) { validateField(field); return set('COUNT_DISTINCT(' + field + ')'); }
         public HavingCondition min(final SObjectField field) { return min(field?.toString()); }
         public HavingCondition min(final String field) { validateField(field); return set('MIN(' + field + ')'); }
         public HavingCondition max(final SObjectField field) { return max(field?.toString()); }
