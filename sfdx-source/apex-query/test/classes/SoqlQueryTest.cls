@@ -1568,6 +1568,17 @@ private class SoqlQueryTest {
     }
 
     @IsTest
+    static void should_identify_null_fetch_into_list_type() {
+        // Act & Assert
+        try {
+            SoqlQuery.of('Account').fetchInto(null);
+            Assert.fail('Should have thrown QueryException');
+        } catch (Query.QueryException e) {
+            Assert.areEqual('listType cannot be null', e.getMessage());
+        }
+    }
+
+    @IsTest
     static void should_project_first_local_database_row_into_a_dto() {
         // Arrange
         insert new Account(Name = 'Local First DTO');
