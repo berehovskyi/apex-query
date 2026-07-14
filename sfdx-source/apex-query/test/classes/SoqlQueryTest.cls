@@ -1373,6 +1373,20 @@ private class SoqlQueryTest {
     }
 
     @IsTest
+    static void should_render_not_in_for_typed_having_field() {
+        // Arrange
+        SoqlQuery q = SoqlQuery.of(Account.SObjectType).count(Account.Id).groupBy(Account.Name);
+
+        // Act
+        q.addHavingNotIn(Account.Name, new List<Object>{ 'Acme' });
+
+        // Assert
+        String actual = q.toString();
+        Assert.isTrue(actual.contains('HAVING Name NOT IN :var$0'), actual);
+        Assert.areEqual(new List<Object>{ 'Acme' }, q.getBindings().get('var$0'), 'Collection binding');
+    }
+
+    @IsTest
     static void should_handle_complex_order_by() {
         // Arrange
         SoqlQuery q = SoqlQuery.of(Account.SObjectType).field('Id');

@@ -973,7 +973,7 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
     }
 
     public SoqlQuery addHavingNotIn(final SObjectField field, final Iterable<Object> iterable) {
-        return addHavingIn(field?.toString(), iterable);
+        return addHavingNotIn(field?.toString(), iterable);
     }
 
     public SoqlQuery addHavingNotIn(final String field, final Iterable<Object> iterable) {
@@ -3051,9 +3051,7 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
             if (!cache.containsKey(sObjectType)) {
                 HttpRequest req = new HttpRequest();
                 req.setMethod('GET');
-                req.setEndpoint(
-                    driver.namedCredential + driver.getBaseEndpoint() + 'sobjects/' + sObjectType + '/describe'
-                );
+                req.setEndpoint(driver.getEndpoint(driver.getBaseEndpoint() + 'sobjects/' + sObjectType + '/describe'));
                 HttpResponse res = driver.send(req, 'describeRequest');
                 if (res.getStatusCode() != 200) {
                     throw new QueryException('REST Describe Failed: ' + res.getStatusCode() + ' ' + res.getBody());
@@ -3273,11 +3271,10 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
 
         protected virtual HttpResponse send(final RestDriver driver, final String path) {
             HttpRequest req = new HttpRequest();
-            String separator = path.startsWith('/') ? '' : '/';
             if (batchSize != null) {
                 req.setHeader('Sforce-Query-Options', 'batchSize=' + batchSize);
             }
-            req.setEndpoint('callout:' + driver.namedCredential + separator + path);
+            req.setEndpoint(driver.getEndpoint(path));
             req.setMethod('GET');
             HttpResponse res = driver.send(req, 'queryRequest');
             if (res.getStatusCode() != 200) {
@@ -3370,7 +3367,7 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
             String path = driver.getBaseEndpoint() + 'composite/sobjects/' + sObjectType;
             HttpRequest req = new HttpRequest();
             req.setMethod('POST');
-            req.setEndpoint('callout:' + driver.namedCredential + path);
+            req.setEndpoint(driver.getEndpoint(path));
             req.setHeader('Content-Type', 'application/json');
             req.setHeader('Accept', 'application/json');
             req.setBody(JSON.serialize(new Map<String, Object>{ 'ids' => idsChunk, 'fields' => fields }));
@@ -3566,7 +3563,7 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
             String basePath = driver.getBaseEndpoint() + 'jobs/query';
             HttpRequest req = new HttpRequest();
             req.setMethod('POST');
-            req.setEndpoint('callout:' + driver.namedCredential + basePath);
+            req.setEndpoint(driver.getEndpoint(basePath));
             req.setHeader('Content-Type', 'application/json');
             req.setHeader('Accept', 'application/json');
             req.setBody(
@@ -3593,7 +3590,7 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
             while (completedBody == null) {
                 HttpRequest req = new HttpRequest();
                 req.setMethod('GET');
-                req.setEndpoint('callout:' + driver.namedCredential + statusPath);
+                req.setEndpoint(driver.getEndpoint(statusPath));
                 req.setHeader('Accept', 'application/json');
 
                 HttpResponse res = sendRequest(driver, req, 'status');
@@ -3625,7 +3622,7 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
             }
             HttpRequest req = new HttpRequest();
             req.setMethod('GET');
-            req.setEndpoint('callout:' + driver.namedCredential + resultsPath);
+            req.setEndpoint(driver.getEndpoint(resultsPath));
             req.setHeader('Accept', 'text/csv');
             HttpResponse res = sendRequest(driver, req, 'results');
             String nextLocator = res.getHeader('Sforce-Locator');
@@ -3882,6 +3879,10 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
 
         protected String getBaseEndpoint() {
             return '/services/data/' + apiVersion + '/';
+        }
+
+        protected String getEndpoint(final String path) {
+            return 'callout:' + namedCredential + (path.startsWith('/') ? '' : '/') + path;
         }
 
         public virtual List<Object> run(final QueryArgs args) {
@@ -4236,7 +4237,7 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
 
         public HttpResponse send(final List<String> urls) {
             HttpRequest req = new HttpRequest();
-            req.setEndpoint('callout:' + driver.namedCredential + driver.getBaseEndpoint() + 'composite');
+            req.setEndpoint(driver.getEndpoint(driver.getBaseEndpoint() + 'composite'));
             req.setMethod('POST');
             req.setHeader('Content-Type', 'application/json');
             List<Map<String, Object>> compositeRequests = new List<Map<String, Object>>();
@@ -4282,7 +4283,7 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
 
         public HttpResponse send(final List<String> urls) {
             HttpRequest req = new HttpRequest();
-            req.setEndpoint('callout:' + driver.namedCredential + driver.getBaseEndpoint() + 'composite/batch');
+            req.setEndpoint(driver.getEndpoint(driver.getBaseEndpoint() + 'composite/batch'));
             req.setMethod('POST');
             req.setHeader('Content-Type', 'application/json');
             List<Map<String, Object>> batchRequests = new List<Map<String, Object>>();

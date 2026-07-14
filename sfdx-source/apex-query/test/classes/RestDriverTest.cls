@@ -920,6 +920,25 @@ private class RestDriverTest {
         Assert.areEqual(1, mockCount(mock), 'Should have only called REST API once');
     }
 
+    @IsTest
+    static void should_prefix_rest_describe_endpoint_with_callout_scheme() {
+        // Arrange
+        MockRest mock = new MockRest();
+        mock.addResponse('/services/data/v66.0/sobjects/Account/describe', '{"name":"Account", "fields":[]}');
+        Test.setMock(HttpCalloutMock.class, mock);
+        SoqlQuery.RestDriver driver = new SoqlQuery.RestDriver('MyOrg');
+
+        // Act
+        driver.getDescribeProvider().describeSObject('Account');
+
+        // Assert
+        Assert.areEqual(
+            'callout:MyOrg/services/data/v66.0/sobjects/Account/describe',
+            mock.endpoints[0],
+            'Describe endpoint'
+        );
+    }
+
     private static Integer mockCount(MockRest mock) {
         return mock.callCount;
     }
@@ -2870,6 +2889,7 @@ private class RestDriverTest {
         private final Map<String, String> errorMessages = new Map<String, String>();
         private final Map<String, String> requestBodies = new Map<String, String>();
         public final Map<String, String> headers = new Map<String, String>();
+        public final List<String> endpoints = new List<String>();
         public Integer callCount = 0;
 
         public void addResponse(String path, String body) {
@@ -2902,6 +2922,7 @@ private class RestDriverTest {
                 }
             }
             String url = req.getEndpoint();
+            endpoints.add(url);
 
             if (url.endsWith('/composite')) {
                 Map<String, Object> body = (Map<String, Object>) JSON.deserializeUntyped(req.getBody());
