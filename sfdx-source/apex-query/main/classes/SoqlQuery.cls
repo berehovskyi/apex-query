@@ -3834,7 +3834,7 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
 
     @SuppressWarnings('PMD.AvoidDebugStatements')
     public virtual class RestDriver implements Driver {
-        protected final Pattern apiVersionPattern = Pattern.compile('(?i)^v\\d{2}\\.\\d$');
+        protected final Pattern apiVersionPattern = Pattern.compile('(?i)^v\\d+\\.\\d+$');
         protected String apiVersion = 'v66.0';
         protected final String namedCredential;
         protected final DescribeProvider describeProvider = new RestDescribeProvider(this);
@@ -3874,7 +3874,7 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
             String requested = apiVersion.trim().toLowerCase();
             validateIsTrue(
                 apiVersionPattern.matcher(requested).matches(),
-                'apiVersion must match vXX.X (example: v66.0). Value: ' + apiVersion
+                'apiVersion must match v<major>.<minor> (example: v66.0). Value: ' + apiVersion
             );
             this.apiVersion = requested;
             return this;

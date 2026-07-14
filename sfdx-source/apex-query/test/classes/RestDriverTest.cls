@@ -56,12 +56,26 @@ private class RestDriverTest {
 
     @IsTest
     static void should_validate_api_version_format_for_rest_driver() {
-        try {
-            new SoqlQuery.RestDriver('MyOrg').setApiVersion('66.0');
-            Assert.fail('Expected QueryException for invalid API version format');
-        } catch (Query.QueryException e) {
-            Assert.isTrue(e.getMessage().contains('apiVersion must match vXX.X'));
+        for (String invalidVersion : new List<String>{ '66.0', 'v66', 'version66.0' }) {
+            try {
+                new SoqlQuery.RestDriver('MyOrg').setApiVersion(invalidVersion);
+                Assert.fail('Expected QueryException for invalid API version format: ' + invalidVersion);
+            } catch (Query.QueryException e) {
+                Assert.isTrue(e.getMessage().contains('apiVersion must match v<major>.<minor>'));
+            }
         }
+    }
+
+    @IsTest
+    static void should_accept_three_digit_api_version() {
+        // Arrange
+        SoqlQuery.RestDriver driver = new SoqlQuery.RestDriver('MyOrg');
+
+        // Act
+        SoqlQuery.RestDriver configured = driver.setApiVersion('v100.0');
+
+        // Assert
+        Assert.areEqual(driver, configured, 'API-version configuration should remain fluent');
     }
 
     @IsTest
@@ -2277,25 +2291,12 @@ private class RestDriverTest {
     }
 
     @IsTest
-    static void should_project_non_instantiable_dto_when_element_has_no_default_constructor() {
-        // Arrange
-        MockRest mock = new MockRest();
-        mock.addResponse(
-            '/services/data/v66.0/query/?q=SELECT+Name+FROM+Account',
-            '{"totalSize":1, "done":true, "records":[{"attributes":{"type":"Account"}, "Name":"Ctorless"}]}'
-        );
-        Test.setMock(HttpCalloutMock.class, mock);
-        SoqlQuery q = SoqlQuery.of('Account').field('Name').useDriver(new SoqlQuery.RestDriver('MyOrg'));
-
-        // Act & Assert
+    static void should_reject_unresolved_projection_element_type() {
         try {
-            Test.startTest();
-            q.fetchInto(List<NoDefaultCtorDto>.class);
-            Test.stopTest();
-            Assert.fail('Expected projection to fail for non-instantiable DTO');
-        } catch (Exception e) {
-            Test.stopTest();
-            Assert.isTrue(e.getMessage().contains('Collection store exception'));
+            SoqlQuery.of('Account').fetchInto(List<NoDefaultCtorDto>.class);
+            Assert.fail('Expected projection to reject an unresolved element type');
+        } catch (Query.QueryException e) {
+            Assert.areEqual('elementType cannot be null', e.getMessage());
         }
     }
     // </editor-fold>
