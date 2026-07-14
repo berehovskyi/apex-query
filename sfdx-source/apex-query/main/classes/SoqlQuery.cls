@@ -2818,14 +2818,14 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
         }
 
         private QueryArgs getArgs(Boolean isCount, Type listType) {
+            validateNotNull(listType, 'listType');
+            validateNotNull(elementType(listType), 'elementType');
             final Compiled compiled = compile(isCount);
             QueryArgs args = new QueryArgs(compiled.query, compiled.inlineQuery, compiled.binds, accessMode);
-            validateNotNull(listType, 'elementType');
             args.listType = listType;
             args.isDebugEnabled = query.isDebugEnabled();
             args.isTimerEnabled = query.isTimerEnabled();
             args.timerMode = query.getTimer();
-            elementType(listType);
             return args;
         }
 
