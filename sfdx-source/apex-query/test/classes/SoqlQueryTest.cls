@@ -3435,12 +3435,34 @@ private class SoqlQueryTest {
         );
         Assert.areEqual(bindingsCountBefore, bindingsCountAfter, 'Count bindings should be the same');
     }
+
+    @IsTest
+    static void should_support_stub_api_for_soql_query() {
+        SoqlQuery stubbed = (SoqlQuery) Test.createStub(SoqlQuery.class, new EchoStubProvider());
+        SoqlQuery returned = stubbed.fields(new List<Object>{ 'Id', 'Name' });
+
+        Assert.isNotNull(stubbed, 'SoqlQuery should expose a Stub API-compatible fluent surface');
+        Assert.isTrue(stubbed === returned, 'Bridged fluent calls should retain the concrete stub type');
+    }
     // </editor-fold>
 
     // <editor-fold desc="Helpers">
     private static Id fakeId(Schema.SObjectType sObjectType) {
         String keyPrefix = sObjectType.getDescribe(SObjectDescribeOptions.DEFERRED).getKeyPrefix();
         return Id.valueOf(keyPrefix + '0'.repeat(12 - String.valueOf(0).length()) + 0);
+    }
+
+    private class EchoStubProvider implements System.StubProvider {
+        public Object handleMethodCall(
+            Object stubbedObject,
+            String stubbedMethodName,
+            Type returnType,
+            List<Type> listOfParamTypes,
+            List<String> listOfParamNames,
+            List<Object> listOfArgs
+        ) {
+            return stubbedObject;
+        }
     }
 
     private class MockCacheFactory implements SoqlQuery.CacheFactory {

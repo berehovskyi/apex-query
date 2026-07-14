@@ -1,6 +1,6 @@
 # Apex Query Framework Technical Documentation
 
-The `apex-query` framework is a premium, high-performance query engine for Salesforce Apex. Unlike traditional SOQL builders, it provides a unified DSL for SOQL, SQL, and Data 360 (formerly Data Cloud), built for speed and technical superiority.
+The `apex-query` framework is a layered query builder and execution library for Salesforce Apex. It provides related fluent DSLs for SOQL, SQL, and Data 360 (formerly Data Cloud), with driver-specific execution, projection, security, and pagination behavior.
 
 ## 1. Architectural Foundations
 
@@ -8,32 +8,41 @@ The framework follows a **Unified Query Engine** approach. It isn't just a SOQL 
 
 ### Core Architecture: Policy-Driven Execution
 
-- **Clause-as-a-Class**: Each query part (SELECT, WHERE, etc.) is an isolated unit, ensuring zero overhead for unused clauses.
-- **Driver Strategy**: Decouples query building from execution. The engine selects the optimal `Driver` based on the protocol (SOQL, SQL, Data 360) and security context.
+- **Clause-as-a-Class**: Each query part (SELECT, WHERE, etc.) is an isolated renderable unit that can be composed into bound, inline, and count representations.
+- **Driver Strategy**: Decouples query building from execution. SOQL uses a local database driver by default; REST, SQL, Data 360, and custom execution paths are selected explicitly by the caller.
 - **Binding Strategy**: Supports multiple binding modes to handle different protocol requirements:
     - `NAMED` (`:var$0`): Standard SOQL/Apex bindings (default).
     - `INDEXED` (`$1`): PostgreSQL/SQL style positional bindings.
     - `ANONYMOUS` (`?`): JDBC/Standard SQL anonymous bindings.
-- **Bind Management**: A centralized `BindContext` ensures all variables are automatically sanitized and bound, protecting against injection across all protocols. Each terminal operation (`fetch`, `fetchCount`) generates a fresh, isolated `BindContext` with the appropriate strategy, ensuring stateless query compilation.
+- **Bind Management**: A centralized `BindContext` allocates generated bindings for each rendering operation. Typed condition methods treat ordinary inputs as values and use the selected binding or inline-literal strategy. This protection does not extend to explicitly trusted raw fragments or `literal(...)` expressions. `withBindings(...)` participates in bound Database/SQL execution; Salesforce REST query resources execute complete inline SOQL and do not accept Apex bind maps. User bindings intentionally overwrite generated bindings on a key collision, so generated names such as `var$0` must not be used as a stable override API. Each terminal operation creates a fresh context, but generated names and placeholder order remain implementation details.
+
+### Apex Stub API Compatibility
+
+The concrete `SoqlQuery` and `SqlQuery` classes are intended to support `Test.createStub`. Apex Stub API support takes priority over compile-time parameter type safety on the concrete class when the platform cannot generate an otherwise valid generic collection signature.
+
+- Public builder interfaces retain typed `Iterable<T>` and `List<T>` parameters.
+- Affected concrete methods accept `Object`, immediately cast to the documented collection type, and identify the required runtime type in ApexDoc. Concrete callers therefore lose compile-time checking for those parameters; interface-typed callers remain type-safe.
+- Lazy return methods use covariant concrete adapters that implement `Iterable<T>`, wrap the original iterable, and delegate `iterator()` without copying or materializing results. Return types are never widened to `Object`.
+- A single unsupported public method can invalidate an entire generated stub class, so both query implementations have regression coverage that creates a stub and invokes a bridged fluent method.
 
 ---
 
-## 2. Premium DSL & "jOOQ-Style" Syntax
+## 2. Fluent DSL & "jOOQ-Style" Syntax
 
 `apex-query` is designed to feel like a first-class language extension, borrowing the best patterns from industry standards like jOOQ.
 
 ### The "Keyword Bridge" Strategy
 
-Apex's reserved keywords (like `where`, `having`) are elegantly handled with a consistent `x` suffix (e.g., `wherex()`, `havingx()`). This creates a predictable, professional DSL that looks closer to raw query code than generic "filter" methods.
+Apex's reserved keywords (like `where`, `having`) are handled with a consistent `x` suffix (e.g., `wherex()`, `havingx()`).
 
 ### Terminal Execution API
 
 Query construction is clearly separated from execution via terminal "Fetch" operations:
 
-- `fetch()`: Returns a list of results (SObject or Object depending on engine).
-- `fetchLazy()`: Returns an `Iterable` for chunked retrieval (Cursor/Locator in local DB, paging in REST).
-- `fetchFirst()`: Safely returns a single result or null.
-- `fetchCount()`: Specifically executes a count query.
+- `fetch()`: Returns the rows loaded by the active driver. REST query and Bulk V2 engines return the first page unless query-more is enabled.
+- `fetchLazy()`: Returns an `Iterable` contract backed by a lazy adapter over cursor or REST paging behavior.
+- `fetchFirst()`: Returns the first item from the driver's normal fetch result or null; it does not add a row limit implicitly.
+- `fetchCount()`: SOQL counts source records with `COUNT()` and excludes grouping; SQL counts total result rows before pagination.
 - `locator()`: Returns `Database.QueryLocator` for batch jobs.
 - `cursor()` / `paginationCursor()`: Returns a modern `Database.Cursor` / `Database.PaginationCursor`.
 - `fetchInto(Type listType)`: Returns projected typed rows, where `listType` is `List<T>.class`.
@@ -46,20 +55,21 @@ The `Builder` interface provides powerful introspection methods for debugging an
 
 - `getBindings()`: Returns all bindings for the regular query.
 - `getCountBindings()`: Returns bindings specific to count queries.
-- `.debug()`: Enables automatic logging of the fully inlined query to the debug console during execution.
-- `.useTimer()`: Enables execution timing with default `Query.Timer.CPU` in `SoqlQuery`.
+- `.debug()`: Opts into query/request logging at error severity. Inline queries and request bodies can contain values, so enable it only where sensitive diagnostic output is acceptable.
+- `.useTimer()`: Enables wall-clock millisecond timing with default `Query.Timer.SYS` in both SOQL and SQL.
 - `.useTimer(Query.Timer mode)`: Enables execution timing with selected mode (`CPU` or `SYS`).
 - `toInlineString()`: Returns the query string with all bind values inlined as literals.
 
 ---
 
-## 3. High-Performance Design
+## 3. Performance Characteristics
 
-`apex-query` is architected for **Max Speed** by minimizing runtime overhead and avoiding heavy dependencies:
+The library avoids external runtime dependencies and keeps ordinary builder operations local, while preserving the current driver contract and driver-specific resource costs:
 
-- **Lightweight Initialization**: Minimal object creation during builder calls.
-- **Describe-Free Building**: Operates directly on field tokens and strings to avoid the performance penalty of Apex Describe calls.
-- **Optimized Sub-queries**: Sub-queries are embedded as first-class objects, avoiding manual string manipulation or sub-query builder overhead.
+- **Describe-Free by Default**: Field tokens and strings do not require describe calls. FieldSet and describe-based all-fields helpers do.
+- **Composable Subqueries**: Subqueries are embedded as query parts instead of requiring callers to concatenate complete query strings.
+- **Dual Rendering Contract**: Execution currently produces both bound and inline representations because both are part of the public driver contract, even when a selected driver consumes only one.
+- **Driver-Specific Costs**: Lazy adapters do not materialize their source, but REST continuation, Bulk V2 polling, CSV download/parsing, and typed JSON projection still consume Apex callout, CPU, and heap budgets.
 
 ---
 
@@ -201,24 +211,26 @@ The engine operates with USER_MODE by default and allows configuring the executi
 - **Sharing**: `.withSharing()`, `.withoutSharing()`, `.inheritedSharing()`.
 - **System Mode**: `.withSystemMode()`.
 - **Strip Inaccessible**: `.withStrip(AccessType)` or `.withStrip()`.
+- **Driver/Sharing Ordering**: Explicit custom/REST drivers and sharing-helper drivers are mutually exclusive in either call order; the library rejects the combination instead of silently replacing either choice.
 
 ### Cross-Org & Remote Drivers
 
 The framework supports switching the underlying execution engine via `.useDriver(Driver)`:
 
-- **DatabaseDriver (Default)**: Executes locally. `fetchLazy()` uses **Apex Cursors** for handling up to 50M records with minimal heap overhead.
+- **DatabaseDriver (Default)**: Executes locally. `fetchLazy()` delegates iteration to an Apex Cursor-backed iterable.
 - **RestDriver**: Executes queries against a remote Org (or the same Org loopback) via **Named Credentials**.
-    - **User Mode Enforcement**: Inherently runs in user-mode; attempting to use `AccessLevel.SYSTEM_MODE` with this driver will throw an exception.
-    - **Pagination**: Transparently handles SOQL paging during iteration through the selected REST engine.
+    - **User Mode Enforcement**: Requires exactly `AccessLevel.USER_MODE`; every other access mode is rejected.
+    - **Field Access**: Remote reads already enforce readable-field access. `withStrip()`/`READABLE` remain valid, while `CREATABLE`, `UPDATABLE`, and `UPSERTABLE` are rejected because local permissions cannot represent the remote user's write permissions.
+    - **Pagination**: Follows SOQL continuation pages only when query-more is enabled on the selected REST engine.
     - **QueryAll**: Supports `allRows()` by automatically redirecting to the `/queryAll` REST resource.
 
 ### Multi-Tier Result Caching
 
-- **Memoization**: `.memoize()` stores results in a transaction-scoped `static Map`.
+- **Memoization**: `.memoize()` stores results in a transaction-scoped `static Map`. Cached list structure is shallow-copied on write/read, so callers cannot corrupt later results by adding, removing, sorting, or clearing entries; contained records remain shared objects.
 - **Session Cache**: `.cacheSession('partition')` or `.cacheSession('partition', ttl)` uses Platform Cache Session.
-- **Org Cache**: `.cacheOrg('partition')` or `.cacheOrg('partition', ttl)` uses Platform Cache Org (requires non-User mode).
+- **Org Cache**: `.cacheOrg('partition')` or `.cacheOrg('partition', ttl)` uses Platform Cache Org only outside the default USER_MODE. Under USER_MODE the configuration is intentionally bypassed without a runtime warning.
 - **TTL Support**: Platform Cache entries can have an optional `ttlInSecs` parameter for precise expiration control. TTL functionality is fully tested and validated with dedicated unit tests (`should_respect_session_cache_ttl`, `should_respect_org_cache_ttl`).
-- **Deterministic Keying**: MD5-based keys ensure cache hits are precise and safe across different security modes.
+- **Cache Keys**: MD5-based keys include query/execution state, but their serialized representation is an internal implementation detail and must not be treated as a stable external identifier.
 
 ---
 
@@ -235,6 +247,8 @@ SoqlQuery.TypeOf to = new SoqlQuery.TypeOf('Owner')
 
 SoqlQuery.of('Account').typeOf(to);
 ```
+
+An unfinished `TYPEOF` builder still fails. A finalized builder with no populated `WHEN` entry is intentionally omitted from the containing SELECT list instead of rendering malformed SOQL.
 
 ### Sub-Queries & Joins
 
@@ -259,13 +273,14 @@ The REST execution layer uses a two-level strategy model:
 - **RestDriver + RestEngine**:
     - `RestDriver` handles transport concerns (callout endpoint construction, USER_MODE guard, timers/debug, API version validation).
     - `RestDriver` owns the active `RestEngine` (`useEngine(RestEngine)`), and delegates `runMore`, `count`, and `explain`.
-    - API version is validated with strict `vXX.X` pattern (for example `v66.0`).
+    - API version is validated as `v<major>.<minor>` with one-or-more digits in each numeric component (for example `v66.0` or `v100.0`); version availability remains Salesforce's responsibility.
     - `RestEngine` handles protocol behavior (`runMore`, `count`, `explain`, resource resolution).
 - **QueryEngine (SOQL REST)**:
     - Supports `/query`, `/queryAll`, and tooling variants through `useTooling(Boolean)`.
     - Supports root page sizing with `setBatchSize(Integer)` via `Sforce-Query-Options`.
     - Supports continuation hydration with `setQueryMore(Boolean)` and `setChunkSize(Integer)`.
     - Chooses continuation transport via `useQueryMoreEngine(QueryMoreEngine)`.
+    - Explicit batch/chunk sizes are validated as positive. Salesforce API and transport limits are intentionally left to the selected API version rather than hard-coded by the library.
 - **SObjectCollectionsEngine (`/composite/sobjects/{sObject}`)**:
     - Supports strict WHERE shapes for ID retrieval: `Id = ...` or `Id IN (...)`.
     - Fetches records in request-body ID chunks (`ids`) with configurable `setChunkSize(Integer)`.
@@ -278,6 +293,7 @@ The REST execution layer uses a two-level strategy model:
     - Supports locator continuation with `setQueryMore(Boolean)`.
     - `count()` uses `numberRecordsProcessed` from completed job status.
     - `explain()` is unsupported.
+    - Polling is synchronous and can consume the transaction's Apex CPU budget. `setCpuTimeout` is an optional guard; without it, a governor-limit failure is an accepted outcome.
 
 ### QueryMore Transport Strategies
 
@@ -325,7 +341,7 @@ For `QueryMoreIterator`, shaping is deterministic by target projection type and 
 
 ## 10. Bulk API v2 CSV Projection Details
 
-Bulk API v2 results are projected through an Apex-native CSV pipeline optimized for CPU/heap balance:
+Bulk API v2 results are projected through an Apex-native CSV pipeline. Result pages are downloaded, parsed, and buffered in Apex, so this path still consumes transaction heap and CPU:
 
 - **CSV Parser**:
     - Uses a char-index parser (`parseCsvByCharIndexes`) for row/field scanning.
@@ -351,4 +367,4 @@ Projection is unified by list-type tokens for list-returning methods:
 - Element type is derived from the list type (`resolveElementTypeFromListType`).
 - Untyped targets (`List<Map<String, Object>>.class` / `List<Object>.class`) return map payloads directly.
 - Typed targets (`List<SObject>.class`, `List<DTO>.class`) use JSON projection.
-- DTO projection applies recursive key normalization (`__` -> `_`).
+- DTO projection applies recursive key normalization (`__` -> `_`) and throws `QueryException` if two source keys normalize to the same target key. Untyped projection preserves original keys and is the opt-out.

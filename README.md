@@ -4,7 +4,7 @@
 ![](https://img.shields.io/badge/build-passing-brightgreen.svg)
 ![](https://img.shields.io/badge/coverage-100%25-brightgreen.svg)
 
-`apex-query` is a premium, high-performance query engine for Salesforce Apex. It provides a unified, chainable DSL for **SOQL**, while maintaining architectural support for **ANSI SQL** and **Data Cloud (CDP)**. Designed for technical superiority, type safety, and maximum developer productivity.
+`apex-query` is a layered query builder and execution library for Salesforce Apex. It provides a unified, chainable DSL for **SOQL**, while maintaining architectural support for **ANSI SQL** and **Data Cloud (CDP)**. Designed for technical superiority, type safety, and maximum developer productivity.
 
 ## Table of Contents
 
@@ -55,6 +55,7 @@
     - [REST Driver (Named Credential)](#rest-driver-named-credential)
     - [Projection Strategy](#projection-strategy)
 - [Architecture](#architecture)
+- [Apex Stub API Compatibility](#apex-stub-api-compatibility)
 
 ---
 
@@ -109,8 +110,9 @@ sf package install -p 04tJ5000000D9ZwIAK -o <org-alias> -r -w 10
 - **Security and Runtime Controls:** Built-in sharing/access mode controls, strip-inaccessible options, caching, and debug/timing introspection.
 - **Cross-Org and External Querying:** Use Named Credentials and REST engines to query local orgs, remote orgs, and external backends.
 - **Scalable Data Retrieval:** Supports lazy iteration, query continuation, and bulk-oriented execution paths for large datasets.
-- **Deterministic Query Introspection:** Inspect bound SQL/SOQL, inline-rendered queries, count variants, and bindings at runtime.
+- **Query Introspection:** Inspect bound SQL/SOQL, inline-rendered queries, count variants, and bindings at runtime.
 - **Composable Architecture:** Reuse query fragments through composition, subclass constrained query types, and standardize patterns across teams.
+- **Apex Stub API Support:** Create `SoqlQuery` and `SqlQuery` test doubles with `Test.createStub`, backed by collection-compatible concrete signatures and typed builder interfaces.
 
 ---
 
@@ -660,7 +662,7 @@ Executes queries against a remote Salesforce org via the REST API. This is ideal
 >
 > - **Tooling API Queries**: Fetching metadata or running queries not available in standard SOQL (e.g., `ValidationRule`, `ApexClass`).
 > - **Bypassing SOQL Limits**: Leveraging REST endpoints (like `/composite/sobjects`) to handle large ID lists or specific query shapes that might hit local character limits or governor constraints.
-> - **Asynchronous Scale**: Using the Bulk V2 engine for large data exports without consuming standard transaction heap.
+> - **Asynchronous Backend Execution**: Using the Bulk V2 API for large exports while recognizing that downloaded and parsed result pages still consume Apex heap.
 > - **Query Plans (Explain)**: Obtaining a query plan for performance analysis via the `/query/?explain` resource.
 
 - **Setup**: Requires a **Named Credential** to handle authentication and endpoint resolution.
@@ -702,7 +704,7 @@ SoqlQuery q = SoqlQuery.of('Account')
 
 #### 4. Engine Tuning & Orchestration
 
-Each execution engine provides granular control over the REST transport layer to optimize for throughput, heap usage, or governor limit consumption.
+Each execution engine exposes transport controls with different throughput, response-size, and governor-limit tradeoffs. Every result page materialized or parsed in Apex consumes transaction heap.
 
 ##### QueryEngine (Standard REST)
 
@@ -840,12 +842,15 @@ q.fetch();
 | Method                  | Description                                                                |
 | :---------------------- | :------------------------------------------------------------------------- |
 | `debug()`               | Enables logging of generated SOQL and execution stats to the debug log.    |
-| `useTimer([mode])`      | Enables execution timing (`Query.Timer.CPU` (**Default**) or `SYS`).       |
+| `useTimer([mode])`      | Enables millisecond timing (`SYS` wall-clock by default, or Apex `CPU`).   |
 | `toString()`            | Returns the compiled SOQL string with bind variables (e.g., `:var1`).      |
 | `toInlineString()`      | Returns the compiled SOQL string with all binds formatted as literals.     |
 | `toCountString()`       | Returns the `SELECT COUNT()` variant of the current query string.          |
 | `toInlineCountString()` | Returns the `SELECT COUNT()` variant with all binds formatted as literals. |
 | `getBindings()`         | Returns the current map of bind variables and their values.                |
+
+> [!NOTE]
+> Introspection is repeatable for unchanged builder state, but generated binding names follow builder construction and collection iteration order. Treat generated names and cache-key representations as internal details. DTO projection changes `__` to `_` in field names and throws `QueryException` if two source keys normalize to the same target key.
 
 ---
 
@@ -1317,7 +1322,7 @@ Integer total = q.fetchCount();
 | `fetchInto(Type listType)`       | `List<T>`      | Projects rows into DTO or untyped map/object targets.     |
 | `fetchFirst()`                   | `Object`       | Returns first row or `null`.                              |
 | `fetchFirstAs(Type elementType)` | `T`            | Returns first row projected to a target type or `null`.   |
-| `fetchCount()`                   | `Integer`      | Executes count path via driver.                           |
+| `fetchCount()`                   | `Integer`      | Counts total result rows before row limiting.             |
 | `explain()`                      | `Object`       | Executes explain path if supported by the driver/backend. |
 
 > [!NOTE]
@@ -1347,15 +1352,18 @@ System.debug(q.getBindings());         // { "var$0" : "web" }
 
 **Available Introspection Methods:**
 
-| Method                  | Description                                             |
-| :---------------------- | :------------------------------------------------------ |
-| `debug()`               | Enables query/request debug logging.                    |
-| `useTimer([mode])`      | Enables timing metrics (`CPU` or `SYS`).                |
-| `toString()`            | Returns SQL with bind placeholders.                     |
-| `toInlineString()`      | Returns SQL with inline formatted literal values.       |
-| `toCountString()`       | Returns generated `COUNT(*)` SQL.                       |
-| `toInlineCountString()` | Returns generated inline `COUNT(*)` SQL.                |
-| `getBindings()`         | Returns current binding map used by the query/compiler. |
+| Method                  | Description                                                              |
+| :---------------------- | :----------------------------------------------------------------------- |
+| `debug()`               | Enables query/request debug logging.                                     |
+| `useTimer([mode])`      | Enables millisecond timing (`SYS` wall-clock by default, or Apex `CPU`). |
+| `toString()`            | Returns SQL with bind placeholders.                                      |
+| `toInlineString()`      | Returns SQL with inline formatted literal values.                        |
+| `toCountString()`       | Returns generated `COUNT(*)` SQL.                                        |
+| `toInlineCountString()` | Returns generated inline `COUNT(*)` SQL.                                 |
+| `getBindings()`         | Returns current binding map used by the query/compiler.                  |
+
+> [!NOTE]
+> Introspection is repeatable for unchanged builder state, but placeholder order follows builder construction and input iteration order. Custom drivers must consume bindings according to their selected strategy rather than relying on map iteration. Generated binding names and cache-key representations are internal details.
 
 ---
 
@@ -1464,16 +1472,17 @@ AccountDto firstDto = (AccountDto) CdpSqlQuery.of('ssot__Account__dlm')
     .fetchFirstAs(AccountDto.class);
 ```
 
-| Target Type                     | Key Behavior                              | Recommendation                                           |
-| :------------------------------ | :---------------------------------------- | :------------------------------------------------------- |
-| `List<Object>`                  | Untyped rows, original keys preserved     | Default for ad-hoc exploration                           |
-| `List<Map<String, Object>>`     | Untyped map rows, original keys preserved | Best when exact column names matter                      |
-| `List<MyDto>.class`             | DTO field normalization: `__` becomes `_` | Good for strongly typed app DTOs                         |
-| `List<? extends SObject>.class` | JSON-based SObject materialization        | Only for Data Cloud DMO/DLO SObjects; prefer REST driver |
+| Target Type                     | Key Behavior                                                | Recommendation                                           |
+| :------------------------------ | :---------------------------------------------------------- | :------------------------------------------------------- |
+| `List<Object>`                  | Untyped rows, original keys preserved                       | Default for ad-hoc exploration                           |
+| `List<Map<String, Object>>`     | Untyped map rows, original keys preserved                   | Best when exact column names matter                      |
+| `List<MyDto>.class`             | DTO field normalization: `__` becomes `_`; collisions throw | Good for strongly typed app DTOs                         |
+| `List<? extends SObject>.class` | JSON-based SObject materialization                          | Only for Data Cloud DMO/DLO SObjects; prefer REST driver |
 
 > [!NOTE]
 > Use untyped map targets when you need exact Data Cloud field names without normalization.
 > Typed SObject projection in CDP is intended for Data Cloud schema SObjects only (DMOs and DLOs).
+> Typed DTO projection throws `QueryException` when two source keys normalize to the same Apex field name.
 
 **Terminal projection methods and supported parameters:**
 
@@ -1508,3 +1517,15 @@ Execution pipeline:
 3. **Context** creates `QueryArgs` and applies execution/security settings
 4. **Driver/Engine** executes against local DB, Salesforce REST, or Data Cloud APIs
 5. **Projection** materializes results as untyped rows, DTOs, or SObjects
+
+---
+
+## Apex Stub API Compatibility
+
+`SoqlQuery` and `SqlQuery` are designed to work with Apex `Test.createStub`. The Apex Stub API cannot generate stub classes for some otherwise valid generic `Iterable`/`List` signatures. When the platform forces a choice on the concrete query class, **Stub API support takes priority over compile-time parameter type safety**.
+
+- Public builder interfaces retain typed collection contracts such as `Iterable<T>` and `List<T>`.
+- Affected concrete methods accept `Object`, immediately cast it to the documented collection type, and declare the actual requirement in ApexDoc. Passing the intended iterable/list remains source-compatible; passing another object compiles against the concrete class but fails at the runtime cast.
+- Lazy concrete return types are small covariant adapters that implement `Iterable<T>`, wrap the driver's original iterable, and delegate `iterator()` without copying or eagerly loading results.
+
+Use the typed builder interfaces when compile-time collection validation is more important to application code. Use the concrete classes when configuring drivers or creating Stub API-generated test doubles.

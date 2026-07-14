@@ -2466,7 +2466,7 @@ private class SqlQueryTest {
             new TestSqlQuery('sales').groupBy((Iterable<Object>) null);
             Assert.fail('Expected null grouping elements to be rejected');
         } catch (Query.QueryException e) {
-            Assert.areEqual('grouping elements cannot be null', e.getMessage());
+            Assert.areEqual('grouping element cannot be null', e.getMessage());
         }
     }
 
@@ -4154,6 +4154,17 @@ private class SqlQueryTest {
         Assert.areEqual(Datetime.newInstanceGmt(2023, 10, 1, 12, 0, 0), bindings.get('var$9'), 'updated_at binding');
         Assert.areEqual(5, bindings.get('var$10'), 'HAVING COUNT binding');
     }
+
+    @IsTest
+    static void should_support_stub_api_for_sql_query() {
+        // Act
+        SqlQuery stubbed = (SqlQuery) Test.createStub(SqlQuery.class, new EchoStubProvider());
+        SqlQuery returned = stubbed.fields(new List<Object>{ 'Id', 'Name' });
+
+        // Assert
+        Assert.isNotNull(stubbed, 'SqlQuery should expose a Stub API-compatible fluent surface');
+        Assert.isTrue(stubbed === returned, 'Bridged fluent calls should retain the concrete stub type');
+    }
     // </editor-fold>
 
     // <editor-fold desc="Helpers">
@@ -4208,6 +4219,19 @@ private class SqlQueryTest {
 
         public Object explain(SqlQuery.QueryArgs args) {
             return null;
+        }
+    }
+
+    private class EchoStubProvider implements System.StubProvider {
+        public Object handleMethodCall(
+            Object stubbedObject,
+            String stubbedMethodName,
+            Type returnType,
+            List<Type> listOfParamTypes,
+            List<String> listOfParamNames,
+            List<Object> listOfArgs
+        ) {
+            return stubbedObject;
         }
     }
 
