@@ -1598,6 +1598,34 @@ private class SoqlQueryTest {
     }
 
     @IsTest
+    static void should_reject_sharing_mode_after_explicit_driver() {
+        // Arrange
+        SoqlQuery q = SoqlQuery.of('Account').useRestDriver('RemoteOrg');
+
+        // Act & Assert
+        try {
+            q.withSharing();
+            Assert.fail('Should have thrown QueryException');
+        } catch (Query.QueryException e) {
+            Assert.areEqual('Cannot configure sharing after an explicit driver.', e.getMessage());
+        }
+    }
+
+    @IsTest
+    static void should_reject_explicit_driver_after_sharing_mode() {
+        // Arrange
+        SoqlQuery q = SoqlQuery.of('Account').withoutSharing();
+
+        // Act & Assert
+        try {
+            q.useRestDriver('RemoteOrg');
+            Assert.fail('Should have thrown QueryException');
+        } catch (Query.QueryException e) {
+            Assert.areEqual('Cannot configure an explicit driver after a sharing mode.', e.getMessage());
+        }
+    }
+
+    @IsTest
     static void should_iterate_over_mock_paged_results() {
         // Arrange
         MultiBatchMockDriver mock = new MultiBatchMockDriver();
