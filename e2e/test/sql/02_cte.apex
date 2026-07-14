@@ -20,8 +20,8 @@ q.with('recent_cte', recentFacetables)
 Integer count = q.fetchCount();
 List<Object> results = q.fetch();
 
-System.debug('E2E Test 01: Simple Query');
+System.debug('E2E Test 02: Common Table Expressions');
 System.debug('Count: ' + count);
 Assert.isTrue(count > 0, 'Should return at least one row');
 Assert.isTrue(!results.isEmpty(), 'Results list should not be empty');
-System.debug('E2E Test 01 Passed');
+System.debug('E2E Test 02 Passed');
