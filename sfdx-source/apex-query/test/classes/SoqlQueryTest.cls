@@ -1494,6 +1494,24 @@ private class SoqlQueryTest {
     }
 
     @IsTest
+    static void should_isolate_memoized_list_from_caller_mutation() {
+        // Arrange
+        Account acct = new Account(Name = 'Memo mutation isolation');
+        insert acct;
+        SoqlQuery q = SoqlQuery.of(Account.SObjectType).field(Account.Id).addConditionEq(Account.Id, acct.Id).memoize();
+        Integer queriesBefore = Limits.getQueries();
+
+        // Act
+        List<SObject> firstResult = q.fetch();
+        firstResult.clear();
+        List<SObject> secondResult = q.fetch();
+
+        // Assert
+        Assert.areEqual(1, secondResult.size(), 'Caller mutation must not change the memoized result');
+        Assert.areEqual(queriesBefore + 1, Limits.getQueries(), 'Second fetch should still use memoization');
+    }
+
+    @IsTest
     static void should_handle_cache_partition_calls() {
         // Arrange
         SoqlQuery q = SoqlQuery.of('Account').field('Id');

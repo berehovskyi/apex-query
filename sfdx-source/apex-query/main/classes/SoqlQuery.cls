@@ -2775,7 +2775,9 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
             List<Object> result = (List<Object>) getFromCache(key);
             if (result == null) {
                 result = driver.run(args);
-                putInCache(key, result);
+                putInCache(key, result.clone());
+            } else {
+                result = result.clone();
             }
             List<Object> securedResult = (accessType == null || driver instanceof RestDriver)
                 ? result
