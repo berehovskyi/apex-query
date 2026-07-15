@@ -43,7 +43,7 @@ fi
 echo "Fetching connection info and API session token..."
 
 # 1. Fetch Endpoint and AccessToken from org display
-ORG_JSON=$(sf org display --json "${TARGET_ORG_ARGS[@]}")
+ORG_JSON=$(SF_TEMP_SHOW_SECRETS=true sf org display --json "${TARGET_ORG_ARGS[@]}")
 
 if [[ $? -ne 0 ]]; then
     echo "Error: Could not fetch current org details. Ensure you are authenticated."

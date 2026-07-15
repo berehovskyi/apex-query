@@ -683,6 +683,25 @@ SoqlQuery.of('Account')
     .fetch();
 ```
 
+##### Named Query API
+
+Invoke a Salesforce API Named Query without exposing the normal SOQL builder surface. The Named Query metadata owns
+the complete `SELECT`, `FROM`, and filtering clauses; `withBindings(...)` sends its declared bind values as encoded
+REST query parameters.
+
+```apex
+List<Account> accounts = (List<Account>) SoqlQuery.ofNamed('AccountsByName')
+    .useRestDriver('RemoteOrgNC')
+    .withBindings(new Map<String, Object>{ 'name' => 'Acme' })
+    .fetchInto(List<Account>.class);
+```
+
+`SoqlQuery.ofNamed(...)` returns `SoqlQuery.Named`, which supports `fetch()`, `fetchInto(...)`, `fetchLazy()`,
+`fetchLazyInto(...)`, and `fetchCount()`. Its bindings are declared by the Named Query metadata and are sent to the
+REST endpoint; they do not modify a locally built SOQL statement. Use `setQueryMore(true)` to hydrate every response
+page. Named Queries use direct continuation requests by default; `setBatchSize(...)`, `setChunkSize(...)`, and
+`useQueryMoreEngine(...)` are also available when transport tuning is required.
+
 #### 3. Rest Engines
 
 The `RestDriver` uses pluggable **Engines** to handle different query scales and requirements.

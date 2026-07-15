@@ -26,6 +26,51 @@ private class RestDriverTest {
     }
 
     @IsTest
+    static void should_execute_named_query_with_encoded_parameters() {
+        // Arrange
+        String expectedPath =
+            '/services/data/v66.0/named/query/AccountsByName?limit=10&name=' +
+            EncodingUtil.urlEncode('Acme & Sons', 'UTF-8');
+        MockRest mock = new MockRest();
+        mock.addResponse(
+            expectedPath,
+            '{"totalSize":2,"done":false,"nextRecordsUrl":"/services/data/v66.0/query/01gNamed-2",' +
+            '"records":[{"attributes":{"type":"Account"},"Name":"Acme & Sons"}]}'
+        );
+        mock.addResponse(
+            '/services/data/v66.0/query/01gNamed-2',
+            '{"totalSize":2,"done":true,"records":[{"attributes":{"type":"Account"},"Name":"Beta"}]}'
+        );
+        Test.setMock(HttpCalloutMock.class, mock);
+
+        SoqlQuery.Named query = SoqlQuery.ofNamed('AccountsByName')
+            .useRestDriver('MyOrg')
+            .setBatchSize(200)
+            .setQueryMore(true)
+            .setChunkSize(1)
+            .withBindings(new Map<String, Object>{ 'name' => 'Acme & Sons', 'limit' => 10 });
+
+        // Act
+        Test.startTest();
+        List<Account> results = (List<Account>) query.fetchInto(List<Account>.class);
+        Assert.isTrue(query == query.useQueryMoreEngine(SoqlQuery.QueryMoreEngine.QUERY));
+        Integer totalSize = query.fetchCount();
+        Test.stopTest();
+
+        // Assert
+        Assert.areEqual(2, results.size());
+        Assert.areEqual('Acme & Sons', results[0].Name);
+        Assert.areEqual('Beta', results[1].Name);
+        Assert.areEqual(2, totalSize);
+        Assert.areEqual('batchSize=200', mock.headers.get('Sforce-Query-Options'));
+        Assert.isTrue(mock.hasRequestedPath(expectedPath), 'Named Query endpoint and parameters');
+        Assert.isTrue(
+            mock.hasRequestedPath('/services/data/v66.0/query/01gNamed-2'),
+            'Named Query continuation endpoint'
+        );
+    }
+
+    @IsTest
     static void should_preserve_all_rows_text_inside_rest_query_literal() {
         // Arrange
         String expectedQuery = 'SELECT Name FROM Account WHERE Name = \'Acme ALL ROWS\'';
