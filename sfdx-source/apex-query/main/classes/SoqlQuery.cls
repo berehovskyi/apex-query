@@ -1946,6 +1946,23 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
             return this;
         }
 
+        /**
+         * Uses a Salesforce formula expression as the left side of a WHERE comparison.
+         *
+         * FORMULA() in SOQL WHERE clauses is a Summer '26 pilot feature and must be enabled
+         * in the executing organization. It isn't supported in SELECT or HAVING clauses.
+         *
+         * @param expression Formula expression evaluated for each queried record
+         * @return Current condition
+         * @example
+         * SoqlQuery.COND.formula('Amount - Cost__c').gt(250)
+         * // FORMULA('Amount - Cost__c') > :var$0
+         */
+        public Condition formula(final String expression) {
+            validateNotBlank(expression, 'expression');
+            return field('FORMULA(\'' + String.escapeSingleQuotes(expression) + '\')');
+        }
+
         public Condition comparand(final String operator, final Object value) {
             this.operator = operator;
             this.value = value;

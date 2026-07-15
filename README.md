@@ -402,6 +402,7 @@ q.wherex(SoqlQuery.COND.field(Account.Industry).eq('Technology'));
 | **Shortcut**   | `addConditionNe(field, value)`                  | `field != value`                                          |
 | **Shortcut**   | `addConditionIn(field, value)`                  | `field IN :iterable` or `field IN (subquery)`             |
 | **Shortcut**   | `addConditionNotIn(field, value)`               | `field NOT IN :iterable` or `field NOT IN (subquery)`     |
+| **Formula**    | `COND.formula(expression)`                      | `FORMULA('expression')` as a `WHERE` comparison operand.  |
 | **Identity**   | `byId(Id)` / `byIds(Iterable<Id>)`              | `Id = :id` or `Id IN :ids`                                |
 
 **Available Operators (via `SoqlQuery.COND`):**
@@ -422,7 +423,7 @@ q.wherex(SoqlQuery.COND.field(Account.Industry).eq('Technology'));
 
 Factory for advanced `WHERE` logic. Returns a fluent `Condition` object.
 
-**Selection:** `id()`, `field(field)`.
+**Selection:** `id()`, `field(field)`, `formula(expression)`.
 
 **Operators:** `eq(value)`, `ne(value)`, `gt(value)`, `ge(value)`, `lt(value)`, `le(value)`, `likex(value)`.
 
@@ -431,6 +432,27 @@ Factory for advanced `WHERE` logic. Returns a fluent `Condition` object.
 **Logical:** `isNull()`, `isNotNull()`, `isTrue()`, `isFalse()`.
 
 **Chaining:** `add(cond)`, `addAnd(cond)`, `addOr(cond)`, `notx()`.
+
+#### Formula Conditions (Pilot)
+
+Use `formula(expression)` to compare a calculated value in a `WHERE` clause without adding a formula field.
+
+```apex
+SoqlQuery query = SoqlQuery.of('Opportunity')
+    .field('Id')
+    .field('Amount')
+    .addCondition(
+        SoqlQuery.COND
+            .formula('Amount - Cost__c')
+            .gt(250)
+    );
+// SELECT Id, Amount FROM Opportunity WHERE FORMULA('Amount - Cost__c') > :var$0
+```
+
+`FORMULA()` in `WHERE` is a Summer '26 Salesforce pilot and must be enabled in the executing organization. The
+library renders and safely escapes the expression, but it can't enable the organization feature. Salesforce currently
+documents arithmetic `+` and `-`, numeric/currency/date/datetime results, and `WHERE` usage only—not `SELECT` or
+`HAVING`.
 
 ### Logical Junctions
 

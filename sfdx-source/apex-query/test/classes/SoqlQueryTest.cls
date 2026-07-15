@@ -2182,6 +2182,53 @@ private class SoqlQueryTest {
     }
 
     @IsTest
+    static void should_render_formula_where_condition_without_executing_query() {
+        // Arrange
+        SoqlQuery query = SoqlQuery.of('Opportunity')
+            .field('Id')
+            .field('Amount')
+            .addCondition(SoqlQuery.COND.formula('Amount - Cost__c').gt(250));
+
+        // Act
+        String boundQuery = query.toString();
+        String inlineQuery = query.toInlineString();
+
+        // Assert
+        Assert.areEqual('SELECT Id, Amount FROM Opportunity WHERE FORMULA(\'Amount - Cost__c\') > :var$0', boundQuery);
+        Assert.areEqual('SELECT Id, Amount FROM Opportunity WHERE FORMULA(\'Amount - Cost__c\') > 250', inlineQuery);
+        Assert.areEqual(250, query.getBindings().get('var$0'));
+    }
+
+    @IsTest
+    static void should_escape_formula_expression_without_executing_query() {
+        // Arrange
+        String expression = 'IF(Name = \'Acme\', 1, 0)';
+
+        // Act
+        String actual = SoqlQuery.COND.formula(expression).gt(0).toString();
+
+        // Assert
+        Assert.areEqual('FORMULA(\'IF(Name = \\\'Acme\\\', 1, 0)\') > 0', actual);
+    }
+
+    @IsTest
+    static void should_reject_blank_formula_expression_without_executing_query() {
+        try {
+            SoqlQuery.COND.formula(null);
+            Assert.fail('Expected null formula expression to be rejected');
+        } catch (Query.QueryException e) {
+            Assert.areEqual('expression cannot be null', e.getMessage());
+        }
+
+        try {
+            SoqlQuery.COND.formula(' ');
+            Assert.fail('Expected blank formula expression to be rejected');
+        } catch (Query.QueryException e) {
+            Assert.areEqual('expression cannot be blank', e.getMessage());
+        }
+    }
+
+    @IsTest
     static void should_reject_invalid_typeof_state() {
         try {
             new SoqlQuery.TypeOf(null);
