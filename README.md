@@ -82,13 +82,13 @@ Install in dependency order:
 ### Core (SOQL)
 
 ```sh pkg::apex-query
-sf package install -p 04tJ5000000D9ZrIAK -o <org-alias> -r -w 10
+sf package install -p 04tfj000000N6W9AAK -o <org-alias> -r -w 10
 ```
 
 ### (Optional) SQL layer (SQL + PostgreSQL + MySQL)
 
 ```sh pkg::apex-sql-query
-sf package install -p 04tJ5000000D9ZwIAK -o <org-alias> -r -w 10
+sf package install -p 04tfj000000N6pVAAS -o <org-alias> -r -w 10
 ```
 
 ### (Optional) Data 360 layer (CDP/Data Cloud Query)
