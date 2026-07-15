@@ -152,6 +152,24 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
     }
 
     /**
+     * Creates a REST API Named Query invocation.
+     *
+     * Named queries own their complete SOQL definition in Salesforce metadata, so the returned
+     * type intentionally exposes execution and parameter APIs instead of the SOQL builder DSL.
+     *
+     * @param apiName API name of the Named Query metadata record
+     * @return Named Query invocation
+     * @example
+     * List<Account> accounts = SoqlQuery.ofNamed('AccountsByName')
+     *     .useRestDriver('MyNamedCredential')
+     *     .withBindings(new Map<String, Object>{ 'name' => 'Acme' })
+     *     .fetch();
+     */
+    public static Named ofNamed(final String apiName) {
+        return new Named(apiName);
+    }
+
+    /**
      * Sets a custom execution driver.
      * @param driver Driver implementation to use for terminal operations
      * @return Current query instance for fluent chaining
@@ -1483,6 +1501,144 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
     // </editor-fold>
 
     // <editor-fold desc="API Classes">
+    /**
+     * REST API Named Query invocation.
+     *
+     * Named Query parameters are encoded as URL query parameters and sent to
+     * `/services/data/{version}/named/query/{apiName}`.
+     */
+    public class Named {
+        private final String apiName;
+        private final Map<String, Object> bindings = new Map<String, Object>();
+        private final NamedQueryEngine engine = new NamedQueryEngine();
+        private RestDriver driver;
+
+        private Named(final String apiName) {
+            validateNotBlank(apiName, 'apiName');
+            this.apiName = apiName;
+            engine.useQueryMoreEngine(QueryMoreEngine.QUERY);
+        }
+
+        /**
+         * Configures an existing REST driver for this Named Query invocation.
+         * @param driver REST driver to use
+         * @return Current Named Query invocation
+         */
+        public Named useDriver(final RestDriver driver) {
+            validateNotNull(driver, 'driver');
+            this.driver = driver.useEngine(engine);
+            return this;
+        }
+
+        /**
+         * Configures a REST driver using a Named Credential.
+         * @param namedCredential Named Credential endpoint name
+         * @return Current Named Query invocation
+         */
+        public Named useRestDriver(final String namedCredential) {
+            return useDriver(new RestDriver(namedCredential));
+        }
+
+        /**
+         * Replaces the bindings sent as parameters to the Named Query REST endpoint.
+         * @param bindings Named Query bind names and values
+         * @return Current Named Query invocation
+         */
+        public Named withBindings(final Map<String, Object> bindings) {
+            validateNotNull(bindings, 'bindings');
+            this.bindings.clear();
+            this.bindings.putAll(bindings);
+            return this;
+        }
+
+        /**
+         * Sets the requested row count for the initial Named Query response page.
+         * @param size Requested row count per page
+         * @return Current Named Query invocation
+         */
+        public Named setBatchSize(final Integer size) {
+            engine.setBatchSize(size);
+            return this;
+        }
+
+        /**
+         * Enables or disables hydration of Named Query continuation URLs.
+         * @param enabled True to follow `nextRecordsUrl` values
+         * @return Current Named Query invocation
+         */
+        public Named setQueryMore(final Boolean enabled) {
+            engine.setQueryMore(enabled);
+            return this;
+        }
+
+        /**
+         * Sets the continuation transport chunk size.
+         * @param size Continuation URLs per transport request
+         * @return Current Named Query invocation
+         */
+        public Named setChunkSize(final Integer size) {
+            engine.setChunkSize(size);
+            return this;
+        }
+
+        /**
+         * Selects the transport used to hydrate continuation URLs.
+         * @param queryMoreEngine Continuation transport
+         * @return Current Named Query invocation
+         */
+        public Named useQueryMoreEngine(final QueryMoreEngine queryMoreEngine) {
+            engine.useQueryMoreEngine(queryMoreEngine);
+            return this;
+        }
+
+        /** Executes the Named Query and returns SObject records. */
+        public List<SObject> fetch() {
+            return (List<SObject>) fetchInto(List<SObject>.class);
+        }
+
+        /**
+         * Executes the Named Query and projects its records into the requested list type.
+         * @param listType List<T>.class result type
+         * @return Projected result list
+         */
+        public Object fetchInto(final Type listType) {
+            return requireDriver().run(getArgs(listType));
+        }
+
+        /** Lazily executes the Named Query and returns SObject records. */
+        public LazySObjectIterable fetchLazy() {
+            return new LazySObjectIterable((Iterable<SObject>) requireDriver().runMore(getArgs(List<SObject>.class)));
+        }
+
+        /**
+         * Lazily executes the Named Query and projects records into the requested list element type.
+         * @param listType List<T>.class result type
+         * @return Lazy projected records
+         */
+        public LazyObjectIterable fetchLazyInto(final Type listType) {
+            return new LazyObjectIterable(requireDriver().runMore(getArgs(listType)));
+        }
+
+        /** Executes the Named Query and returns the response totalSize. */
+        public Integer fetchCount() {
+            return requireDriver().count(getArgs(List<SObject>.class));
+        }
+
+        private RestDriver requireDriver() {
+            validateNotNull(driver, 'driver');
+            return driver;
+        }
+
+        private QueryArgs getArgs(final Type listType) {
+            validateNotNull(listType, 'listType');
+            validateNotNull(elementType(listType), 'elementType');
+            QueryArgs args = new QueryArgs(apiName, apiName, bindings.clone(), AccessLevel.USER_MODE);
+            args.listType = listType;
+            args.subQueryHierarchy = new Map<String, Set<String>>{ '' => new Set<String>() };
+            return args;
+        }
+    }
+
     public interface Builder extends Query.Builder {
         // Drivers
         Query.Builder useDriver(Driver driver);
@@ -3354,12 +3510,7 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
         }
 
         public virtual Integer count(final RestDriver driver, final QueryArgs args) {
-            RestQuery restQuery = new RestQuery(args.inlineQuery);
-            String resource = resolveQueryResource(restQuery.allRows);
-            HttpResponse res = send(
-                driver,
-                driver.getBaseEndpoint() + resource + '/?q=' + EncodingUtil.urlEncode(restQuery.query, 'UTF-8')
-            );
+            HttpResponse res = send(driver, resolveInitialRequestPath(driver, args));
             Map<String, Object> body = (Map<String, Object>) JSON.deserializeUntyped(res.getBody());
             return (Integer) body.get('totalSize');
         }
@@ -3389,11 +3540,43 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
             return res;
         }
 
+        protected virtual String resolveInitialRequestPath(final RestDriver driver, final QueryArgs args) {
+            RestQuery restQuery = new RestQuery(args.inlineQuery);
+            String resource = resolveQueryResource(restQuery.allRows);
+            return driver.getBaseEndpoint() + resource + '/?q=' + EncodingUtil.urlEncode(restQuery.query, 'UTF-8');
+        }
+
         public virtual String resolveQueryResource(final Boolean allRows) {
             if (useTooling) {
                 return allRows ? 'tooling/queryAll' : 'tooling/query';
             }
             return allRows ? 'queryAll' : 'query';
+        }
+    }
+
+    /** REST engine for `/named/query/{apiName}` resources. */
+    private class NamedQueryEngine extends QueryEngine {
+        protected override String resolveInitialRequestPath(final RestDriver driver, final QueryArgs args) {
+            String path =
+                driver.getBaseEndpoint() +
+                'named/query/' +
+                EncodingUtil.urlEncode(args.query, 'UTF-8').replace('+', '%20');
+            if (args.binds?.isEmpty() ?? true) {
+                return path;
+            }
+
+            List<String> names = new List<String>(args.binds.keySet());
+            names.sort();
+            List<String> encodedParameters = new List<String>();
+            for (String name : names) {
+                validateNotBlank(name, 'parameter name');
+                Object value = args.binds.get(name);
+                validateNotNull(value, 'parameter ' + name);
+                encodedParameters.add(
+                    EncodingUtil.urlEncode(name, 'UTF-8') + '=' + EncodingUtil.urlEncode(String.valueOf(value), 'UTF-8')
+                );
+            }
+            return path + '?' + String.join(encodedParameters, '&');
         }
     }
 
@@ -4461,9 +4644,7 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
             isSequentialQueryMoreEngine = engine.queryMoreEngineType == SoqlQuery.QueryMoreEngine.QUERY;
             queryMoreEngine = engine.createQueryMoreEngine(driver, args);
 
-            RestQuery restQuery = new RestQuery(args.inlineQuery);
-            String resource = engine.resolveQueryResource(restQuery.allRows);
-            nextUrl = driver.getBaseEndpoint() + resource + '/?q=' + EncodingUtil.urlEncode(restQuery.query, 'UTF-8');
+            nextUrl = engine.resolveInitialRequestPath(driver, args);
         }
 
         public Boolean hasNext() {
