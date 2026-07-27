@@ -132,16 +132,20 @@ public virtual inherited sharing class PostgresSqlQuery extends SqlQuery {
 
     /**
      * Adds multiple expressions to `DISTINCT ON (...)`.
-     * @param expressions columns/expressions used by `DISTINCT ON`; cannot be null or empty
+     * @param expressions List of columns/expressions used by `DISTINCT ON`; cannot be null or empty
      * @return this query
      */
-    public PostgresSqlQuery distinctOn(Iterable<Object> expressions) {
-        validateNotNull(expressions, 'expressions');
-        validateIsTrue(expressions.iterator().hasNext(), 'expressions cannot be empty');
-        for (Object expression : expressions) {
-            distinctOn(expression);
-        }
-        return this;
+    public PostgresSqlQuery distinctOn(List<Object> expressions) {
+        return addDistinctOn(expressions);
+    }
+
+    /**
+     * Adds multiple expressions to `DISTINCT ON (...)`.
+     * @param expressions Set of columns/expressions used by `DISTINCT ON`; cannot be null or empty
+     * @return this query
+     */
+    public PostgresSqlQuery distinctOn(Set<Object> expressions) {
+        return addDistinctOn(expressions);
     }
 
     /**
@@ -180,6 +184,15 @@ public virtual inherited sharing class PostgresSqlQuery extends SqlQuery {
         if (expression instanceof String) {
             validateNotBlank((String) expression, 'expression');
         }
+    }
+
+    private PostgresSqlQuery addDistinctOn(Iterable<Object> expressions) {
+        validateNotNull(expressions, 'expressions');
+        validateIsTrue(expressions.iterator().hasNext(), 'expressions cannot be empty');
+        for (Object expression : expressions) {
+            distinctOn(expression);
+        }
+        return this;
     }
 
     private static String joinExpressions(Iterable<Object> expressions) {

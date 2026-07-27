@@ -1,3 +1,8 @@
+---
+name: apex-testing
+description: Apex test conventions for the apex-query repository. Use when adding, changing, reviewing, deploying, or diagnosing unit, integration, regression, Stub API, REST, cache, access-mode, or sharing tests in this project.
+---
+
 # Testing Standards for apex-query
 
 This document defines the requirements for writing high-quality Apex tests in this project. All agents and developers must adhere to these standards to ensure consistency and reliability.
@@ -29,6 +34,16 @@ Every test method must be organized into three distinct, commented blocks:
 
 ## 3. Mocking Protocols
 
+### Apex Stub API
+
+- Keep direct `Test.createStub` coverage for every concrete query class intended
+  to be mocked.
+- After changing a public virtual collection signature, create the complete stub
+  and invoke both its `List<T>` and `Set<T>` overloads. Stub creation validates
+  the entire virtual surface; invocation validates dispatch and arguments.
+- For parameterized interface returns, invoke the concrete covariant wrapper and
+  verify that iteration remains lazy.
+
 ### REST API Callouts
 
 Use the internal `MockRest` class (found in `RestDriverTest.cls`) to simulate Salesforce REST API responses. Always test both success and failure (4xx/5xx) paths.
@@ -47,7 +62,12 @@ Never hit real Platform Cache partitions in unit tests. Use the `MockCacheFactor
 - **No Empty Catch Blocks**: Never use an empty `catch` block to suppress exceptions in tests. If an exception is expected, use a `try-catch` with `Assert.fail()` at the end of the `try` block and assertions inside the `catch`.
 - **Modern Assertions**: Use the `Assert` class (`Assert.areEqual`, `Assert.isTrue`, etc.) instead of the legacy `System.assert` methods.
 - **Independence**: Each test must be isolated and not depend on state created by other tests.
-- **Pure Unit Tests**: Tests must be pure unit tests. **No DML operations** are allowed. All data must be mocked or handled in-memory.
+- **Unit vs. Integration Tests**: Keep focused unit tests DML-free where
+  practical. Use real DML only when persistence, access mode, or record sharing
+  is the behavior under test.
+- **Parallel Isolation**: Keep tests that create users or perform real sharing
+  DML in a dedicated `@IsTest(IsParallel=false)` class. Do not place them in the
+  parallel unit-test class.
 - **Organization & Folds**:
     - Each test must be grouped into a relevant `// <editor-fold desc="...">` block.
     - Groups should be sorted in a logical order (e.g., Basic Syntax -> Complex Logic -> Exceptions).

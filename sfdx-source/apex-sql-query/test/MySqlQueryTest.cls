@@ -203,5 +203,85 @@ private class MySqlQueryTest {
             Assert.areEqual('FETCH FIRST/NEXT is not supported by MySQL; use lim()/offset() instead', e.getMessage());
         }
     }
+
+    @IsTest
+    static void should_handle_inherited_collection_overloads_with_list_and_set() {
+        // Arrange
+        MySqlQuery q1 = MySqlQuery.of('users');
+        MySqlQuery q2 = MySqlQuery.of('users');
+
+        // Act
+        q1.addConditionIn('status', new List<Object>{ 'ACTIVE', 'PENDING' });
+        q2.addConditionIn('status', new Set<Object>{ 'ACTIVE' });
+
+        // Assert
+        Assert.areEqual('SELECT * FROM users WHERE status IN (?, ?)', q1.toString());
+        Assert.areEqual('ACTIVE', q1.getBindings().get('?1'));
+        Assert.areEqual('PENDING', q1.getBindings().get('?2'));
+        Assert.areEqual('SELECT * FROM users WHERE status IN (?)', q2.toString());
+        Assert.areEqual('ACTIVE', q2.getBindings().get('?1'));
+    }
+
+    @IsTest
+    static void should_support_stub_api_for_mysql_query() {
+        // Arrange
+        RecordingStubProvider provider = new RecordingStubProvider();
+        MySqlQuery stubbed = (MySqlQuery) Test.createStub(MySqlQuery.class, provider);
+
+        // Act
+        SqlQuery afterList = stubbed.fields(new List<Object>{ 'Id' });
+        SqlQuery afterSet = stubbed.fields(new Set<Object>{ 'Id' });
+        SqlQuery afterByIdsList = stubbed.byIds(new List<String>{ '001' });
+        SqlQuery afterByIdsSet = stubbed.byIds(new Set<String>{ '001' });
+
+        // Assert
+        Assert.isTrue(stubbed === afterList, 'fields List<T> should retain the concrete stub type');
+        Assert.isTrue(stubbed === afterSet, 'fields Set<T> should retain the concrete stub type');
+        Assert.isTrue(stubbed === afterByIdsList, 'byIds List<T> should retain the concrete stub type');
+        Assert.isTrue(stubbed === afterByIdsSet, 'byIds Set<T> should retain the concrete stub type');
+        Assert.areEqual('fields', provider.calls[0].methodName);
+        Assert.areEqual('List<ANY>', provider.calls[0].paramTypeName);
+        Assert.areEqual(new List<Object>{ 'Id' }, provider.calls[0].arg);
+        Assert.areEqual('fields', provider.calls[1].methodName);
+        Assert.areEqual('Set<ANY>', provider.calls[1].paramTypeName);
+        Assert.areEqual(new Set<Object>{ 'Id' }, provider.calls[1].arg);
+        Assert.areEqual('byIds', provider.calls[2].methodName);
+        Assert.areEqual('List<String>', provider.calls[2].paramTypeName);
+        Assert.areEqual(new List<String>{ '001' }, provider.calls[2].arg);
+        Assert.areEqual('byIds', provider.calls[3].methodName);
+        Assert.areEqual('Set<String>', provider.calls[3].paramTypeName);
+        Assert.areEqual(new Set<String>{ '001' }, provider.calls[3].arg);
+        Assert.areEqual(4, provider.calls.size(), 'Every dispatched call should be recorded');
+    }
     // </editor-fold>
+
+    private class RecordedCall {
+        private final String methodName;
+        private final String paramTypeName;
+        private final Object arg;
+
+        private RecordedCall(final String methodName, final String paramTypeName, final Object arg) {
+            this.methodName = methodName;
+            this.paramTypeName = paramTypeName;
+            this.arg = arg;
+        }
+    }
+
+    private class RecordingStubProvider implements System.StubProvider {
+        private final List<RecordedCall> calls = new List<RecordedCall>();
+
+        public Object handleMethodCall(
+            Object stubbedObject,
+            String stubbedMethodName,
+            Type returnType,
+            List<Type> listOfParamTypes,
+            List<String> listOfParamNames,
+            List<Object> listOfArgs
+        ) {
+            String paramTypeName = listOfParamTypes.isEmpty() ? null : listOfParamTypes[0].toString();
+            Object arg = listOfArgs.isEmpty() ? null : listOfArgs[0];
+            calls.add(new RecordedCall(stubbedMethodName, paramTypeName, arg));
+            return stubbedObject;
+        }
+    }
 }

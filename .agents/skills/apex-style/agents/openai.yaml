@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Apex Style'
+  short_description: 'Apex query implementation conventions'
+  default_prompt: 'Use $apex-style to implement or review Apex code in apex-query.'

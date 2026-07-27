@@ -290,14 +290,26 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
     }
 
     /**
-     * @param fields Iterable of fields to select
+     * @param fields List containing only String or SObjectField values to select
      * @return this query
      */
-    public SoqlQuery fields(final Object fields) {
-        selects.addAll((Iterable<Object>) fields);
-        return this;
+    public SoqlQuery fields(final List<Object> fields) {
+        return addFields(fields);
     }
 
+    /**
+     * @param fields Set containing only String or SObjectField values to select
+     * @return this query
+     */
+    public SoqlQuery fields(final Set<Object> fields) {
+        return addFields(fields);
+    }
+
+    /**
+     * Selects fields from a comma-separated string.
+     * @param fields Comma-separated fields to select
+     * @return this query
+     */
     public SoqlQuery fields(final String fields) {
         selects.addAll(fields);
         return this;
@@ -364,19 +376,21 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
     /**
      * Selects all fields matching the specified field properties (e.g., ACCESSIBLE, UPDATEABLE).
      * Warning: This method involves schema describe operations and can impact performance.
-     * @param properties Iterable of field properties to filter by
+     * @param properties List of field properties to filter by
      * @return this query
      */
-    public SoqlQuery allFields(final Object properties) {
-        final Object describe = ctx.getDescribeProvider().describeSObject(queriedSObject.sObjType);
-        List<Object> allFields;
-        if (describe instanceof DescribeSObjectResponse) {
-            allFields = ((DescribeSObjectResponse) describe).fields;
-        } else {
-            allFields = ((DescribeSObjectResult) describe).fields.getMap().values();
-        }
-        selects.allFields(allFields, (Iterable<FieldProperty>) properties);
-        return this;
+    public SoqlQuery allFields(final List<FieldProperty> properties) {
+        return addAllFields(properties);
+    }
+
+    /**
+     * Selects all fields matching the specified field properties (e.g., ACCESSIBLE, UPDATEABLE).
+     * Warning: This method involves schema describe operations and can impact performance.
+     * @param properties Set of field properties to filter by
+     * @return this query
+     */
+    public SoqlQuery allFields(final Set<FieldProperty> properties) {
+        return addAllFields(properties);
     }
 
     /**
@@ -528,20 +542,40 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
     /**
      * @param relationshipName child relationship API name
      * @param sObjType child SObject type
-     * @param fields Iterable of fields to select
+     * @param fields List containing only String or SObjectField values to select
      * @return this query
      */
-    public SoqlQuery subQuery(final String relationshipName, final SObjectType sObjType, final Object fields) {
+    public SoqlQuery subQuery(final String relationshipName, final SObjectType sObjType, final List<Object> fields) {
+        return subQuery(relationshipName, new SoqlQuery(sObjType).fields(fields));
+    }
+
+    /**
+     * @param relationshipName child relationship API name
+     * @param sObjType child SObject type
+     * @param fields Set containing only String or SObjectField values to select
+     * @return this query
+     */
+    public SoqlQuery subQuery(final String relationshipName, final SObjectType sObjType, final Set<Object> fields) {
         return subQuery(relationshipName, new SoqlQuery(sObjType).fields(fields));
     }
 
     /**
      * @param relationshipName child relationship API name
      * @param sObjType child SObject API name
-     * @param fields Iterable of fields to select
+     * @param fields List containing only String or SObjectField values to select
      * @return this query
      */
-    public SoqlQuery subQuery(final String relationshipName, final String sObjType, final Object fields) {
+    public SoqlQuery subQuery(final String relationshipName, final String sObjType, final List<Object> fields) {
+        return subQuery(relationshipName, new SoqlQuery(sObjType).fields(fields));
+    }
+
+    /**
+     * @param relationshipName child relationship API name
+     * @param sObjType child SObject API name
+     * @param fields Set containing only String or SObjectField values to select
+     * @return this query
+     */
+    public SoqlQuery subQuery(final String relationshipName, final String sObjType, final Set<Object> fields) {
         return subQuery(relationshipName, new SoqlQuery(sObjType).fields(fields));
     }
 
@@ -766,20 +800,38 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
 
     /**
      * @param field field to compare
-     * @param iterable Iterable of values
+     * @param values List of values
      * @return this query
      */
-    public SoqlQuery addConditionIn(final SObjectField field, final Object iterable) {
-        return addCondition(new Condition().field(field).inx((Iterable<Object>) iterable));
+    public SoqlQuery addConditionIn(final SObjectField field, final List<Object> values) {
+        return addInCondition(field, values);
+    }
+
+    /**
+     * @param field field to compare
+     * @param values Set of values
+     * @return this query
+     */
+    public SoqlQuery addConditionIn(final SObjectField field, final Set<Object> values) {
+        return addInCondition(field, values);
     }
 
     /**
      * @param field field API name to compare
-     * @param iterable Iterable of values
+     * @param values List of values
      * @return this query
      */
-    public SoqlQuery addConditionIn(final String field, final Object iterable) {
-        return addCondition(new Condition().field(field).inx((Iterable<Object>) iterable));
+    public SoqlQuery addConditionIn(final String field, final List<Object> values) {
+        return addInCondition(field, values);
+    }
+
+    /**
+     * @param field field API name to compare
+     * @param values Set of values
+     * @return this query
+     */
+    public SoqlQuery addConditionIn(final String field, final Set<Object> values) {
+        return addInCondition(field, values);
     }
 
     /**
@@ -814,20 +866,38 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
 
     /**
      * @param field field to compare
-     * @param iterable Iterable of values
+     * @param values List of values
      * @return this query
      */
-    public SoqlQuery addConditionNotIn(final SObjectField field, final Object iterable) {
-        return addCondition(new Condition().field(field).notIn((Iterable<Object>) iterable));
+    public SoqlQuery addConditionNotIn(final SObjectField field, final List<Object> values) {
+        return addNotInCondition(field, values);
+    }
+
+    /**
+     * @param field field to compare
+     * @param values Set of values
+     * @return this query
+     */
+    public SoqlQuery addConditionNotIn(final SObjectField field, final Set<Object> values) {
+        return addNotInCondition(field, values);
     }
 
     /**
      * @param field field API name to compare
-     * @param iterable Iterable of values
+     * @param values List of values
      * @return this query
      */
-    public SoqlQuery addConditionNotIn(final String field, final Object iterable) {
-        return addCondition(new Condition().field(field).notIn((Iterable<Object>) iterable));
+    public SoqlQuery addConditionNotIn(final String field, final List<Object> values) {
+        return addNotInCondition(field, values);
+    }
+
+    /**
+     * @param field field API name to compare
+     * @param values Set of values
+     * @return this query
+     */
+    public SoqlQuery addConditionNotIn(final String field, final Set<Object> values) {
+        return addNotInCondition(field, values);
     }
 
     /**
@@ -865,11 +935,19 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
     }
 
     /**
-     * @param ids Iterable of record IDs
+     * @param ids List of record IDs
      * @return this query
      */
-    public SoqlQuery byIds(final Object ids) {
-        return addCondition(new Condition().id().inx((Iterable<Object>) ids));
+    public SoqlQuery byIds(final List<Id> ids) {
+        return addIdsCondition(ids);
+    }
+
+    /**
+     * @param ids Set of record IDs
+     * @return this query
+     */
+    public SoqlQuery byIds(final Set<Id> ids) {
+        return addIdsCondition(ids);
     }
     // </editor-fold>
 
@@ -901,12 +979,19 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
     }
 
     /**
-     * @param fields Iterable of fields to group by
+     * @param fields List containing only String or SObjectField values to group by
      * @return this query
      */
-    public SoqlQuery groupBy(final Object fields) {
-        groupsBy.ordinary((Iterable<Object>) fields);
-        return this;
+    public SoqlQuery groupBy(final List<Object> fields) {
+        return addGroupBy(fields);
+    }
+
+    /**
+     * @param fields Set containing only String or SObjectField values to group by
+     * @return this query
+     */
+    public SoqlQuery groupBy(final Set<Object> fields) {
+        return addGroupBy(fields);
     }
 
     public SoqlQuery groupByRollup(final SObjectField field) {
@@ -919,12 +1004,19 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
     }
 
     /**
-     * @param fields Iterable of fields for `ROLLUP`
+     * @param fields List containing only String or SObjectField values for `ROLLUP`
      * @return this query
      */
-    public SoqlQuery groupByRollup(final Object fields) {
-        groupsBy.rollup((Iterable<Object>) fields);
-        return this;
+    public SoqlQuery groupByRollup(final List<Object> fields) {
+        return addRollup(fields);
+    }
+
+    /**
+     * @param fields Set containing only String or SObjectField values for `ROLLUP`
+     * @return this query
+     */
+    public SoqlQuery groupByRollup(final Set<Object> fields) {
+        return addRollup(fields);
     }
 
     public SoqlQuery groupByCube(final SObjectField field) {
@@ -937,12 +1029,19 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
     }
 
     /**
-     * @param fields Iterable of fields for `CUBE`
+     * @param fields List containing only String or SObjectField values for `CUBE`
      * @return this query
      */
-    public SoqlQuery groupByCube(final Object fields) {
-        groupsBy.cube((Iterable<Object>) fields);
-        return this;
+    public SoqlQuery groupByCube(final List<Object> fields) {
+        return addCube(fields);
+    }
+
+    /**
+     * @param fields Set containing only String or SObjectField values for `CUBE`
+     * @return this query
+     */
+    public SoqlQuery groupByCube(final Set<Object> fields) {
+        return addCube(fields);
     }
     // </editor-fold>
 
@@ -1033,38 +1132,74 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
 
     /**
      * @param field aggregate field to compare
-     * @param iterable Iterable of values
+     * @param values List of values
      * @return this query
      */
-    public SoqlQuery addHavingIn(final SObjectField field, final Object iterable) {
-        return addHavingIn(field?.toString(), iterable);
-    }
-
-    /**
-     * @param field aggregate field or expression to compare
-     * @param iterable Iterable of values
-     * @return this query
-     */
-    public SoqlQuery addHavingIn(final String field, final Object iterable) {
-        return addHaving(new HavingCondition().field(field).inx((Iterable<Object>) iterable));
+    public SoqlQuery addHavingIn(final SObjectField field, final List<Object> values) {
+        return addHavingIn(field?.toString(), values);
     }
 
     /**
      * @param field aggregate field to compare
-     * @param iterable Iterable of values
+     * @param values Set of values
      * @return this query
      */
-    public SoqlQuery addHavingNotIn(final SObjectField field, final Object iterable) {
-        return addHavingNotIn(field?.toString(), iterable);
+    public SoqlQuery addHavingIn(final SObjectField field, final Set<Object> values) {
+        return addHavingIn(field?.toString(), values);
     }
 
     /**
      * @param field aggregate field or expression to compare
-     * @param iterable Iterable of values
+     * @param values List of values
      * @return this query
      */
-    public SoqlQuery addHavingNotIn(final String field, final Object iterable) {
-        return addHaving(new HavingCondition().field(field).notIn((Iterable<Object>) iterable));
+    public SoqlQuery addHavingIn(final String field, final List<Object> values) {
+        return addHavingInCondition(field, values);
+    }
+
+    /**
+     * @param field aggregate field or expression to compare
+     * @param values Set of values
+     * @return this query
+     */
+    public SoqlQuery addHavingIn(final String field, final Set<Object> values) {
+        return addHavingInCondition(field, values);
+    }
+
+    /**
+     * @param field aggregate field to compare
+     * @param values List of values
+     * @return this query
+     */
+    public SoqlQuery addHavingNotIn(final SObjectField field, final List<Object> values) {
+        return addHavingNotIn(field?.toString(), values);
+    }
+
+    /**
+     * @param field aggregate field to compare
+     * @param values Set of values
+     * @return this query
+     */
+    public SoqlQuery addHavingNotIn(final SObjectField field, final Set<Object> values) {
+        return addHavingNotIn(field?.toString(), values);
+    }
+
+    /**
+     * @param field aggregate field or expression to compare
+     * @param values List of values
+     * @return this query
+     */
+    public SoqlQuery addHavingNotIn(final String field, final List<Object> values) {
+        return addHavingNotInCondition(field, values);
+    }
+
+    /**
+     * @param field aggregate field or expression to compare
+     * @param values Set of values
+     * @return this query
+     */
+    public SoqlQuery addHavingNotIn(final String field, final Set<Object> values) {
+        return addHavingNotInCondition(field, values);
     }
     // </editor-fold>
 
@@ -1182,13 +1317,21 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
     }
 
     /**
-     * @param permissionSetIds Iterable of permission set IDs
+     * @param permissionSetIds List of permission set IDs
      * @return this query
      */
-    // prettier-ignore
-    public SoqlQuery withPermissionSetIds(final Object permissionSetIds) {
-        ctx.addPermissionSetIds((Iterable<Id>) permissionSetIds); return this;
+    public SoqlQuery withPermissionSetIds(final List<Id> permissionSetIds) {
+        return addPermissionSetIds(permissionSetIds);
     }
+
+    /**
+     * @param permissionSetIds Set of permission set IDs
+     * @return this query
+     */
+    public SoqlQuery withPermissionSetIds(final Set<Id> permissionSetIds) {
+        return addPermissionSetIds(permissionSetIds);
+    }
+
     /**
      * Executes query operations using `with sharing` semantics.
      *
@@ -1285,8 +1428,8 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
      * Results are fetched in batches of 2000 records to minimize heap usage.
      * @return iterable of SObjects for lazy iteration
      */
-    public LazySObjectIterable fetchLazy() {
-        return new LazySObjectIterable((Iterable<SObject>) ctx.runMore(List<SObject>.class));
+    public SObjectIterable fetchLazy() {
+        return new SObjectIterable((Iterable<SObject>) ctx.runMore(List<SObject>.class));
     }
 
     /**
@@ -1294,8 +1437,8 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
      * @param listType target list type token in form `List<T>.class`
      * @return iterable of projected records as `Iterable<Object>` (castable to `Iterable<T>`)
      */
-    public LazyObjectIterable fetchLazyInto(final Type listType) {
-        return new LazyObjectIterable(ctx.runMore(listType));
+    public ObjectIterable fetchLazyInto(final Type listType) {
+        return new ObjectIterable(ctx.runMore(listType));
     }
 
     public SObject fetchFirst() {
@@ -1498,6 +1641,71 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
     private String getRelationshipName() {
         return queriedSObject.getRelationshipName();
     }
+
+    private SoqlQuery addFields(final Iterable<Object> fields) {
+        selects.addAll(fields);
+        return this;
+    }
+
+    private SoqlQuery addAllFields(final Iterable<FieldProperty> properties) {
+        final Object describe = ctx.getDescribeProvider().describeSObject(queriedSObject.sObjType);
+        List<Object> allFields;
+        if (describe instanceof DescribeSObjectResponse) {
+            allFields = ((DescribeSObjectResponse) describe).fields;
+        } else {
+            allFields = ((DescribeSObjectResult) describe).fields.getMap().values();
+        }
+        selects.allFields(allFields, properties);
+        return this;
+    }
+
+    private SoqlQuery addInCondition(final SObjectField field, final Iterable<Object> values) {
+        return addCondition(new Condition().field(field).inx(values));
+    }
+
+    private SoqlQuery addInCondition(final String field, final Iterable<Object> values) {
+        return addCondition(new Condition().field(field).inx(values));
+    }
+
+    private SoqlQuery addNotInCondition(final SObjectField field, final Iterable<Object> values) {
+        return addCondition(new Condition().field(field).notIn(values));
+    }
+
+    private SoqlQuery addNotInCondition(final String field, final Iterable<Object> values) {
+        return addCondition(new Condition().field(field).notIn(values));
+    }
+
+    private SoqlQuery addIdsCondition(final Iterable<Id> ids) {
+        return addCondition(new Condition().id().inx(ids));
+    }
+
+    private SoqlQuery addGroupBy(final Iterable<Object> fields) {
+        groupsBy.ordinary(fields);
+        return this;
+    }
+
+    private SoqlQuery addRollup(final Iterable<Object> fields) {
+        groupsBy.rollup(fields);
+        return this;
+    }
+
+    private SoqlQuery addCube(final Iterable<Object> fields) {
+        groupsBy.cube(fields);
+        return this;
+    }
+
+    private SoqlQuery addHavingInCondition(final String field, final Iterable<Object> values) {
+        return addHaving(new HavingCondition().field(field).inx(values));
+    }
+
+    private SoqlQuery addHavingNotInCondition(final String field, final Iterable<Object> values) {
+        return addHaving(new HavingCondition().field(field).notIn(values));
+    }
+
+    // prettier-ignore
+    private SoqlQuery addPermissionSetIds(final Iterable<Id> permissionSetIds) {
+        ctx.addPermissionSetIds(permissionSetIds); return this;
+    }
     // </editor-fold>
 
     // <editor-fold desc="API Classes">
@@ -1591,7 +1799,10 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
             return this;
         }
 
-        /** Executes the Named Query and returns SObject records. */
+        /**
+         *  Executes the Named Query and returns SObject records.
+         *  @return SObject records
+         */
         public List<SObject> fetch() {
             return (List<SObject>) fetchInto(List<SObject>.class);
         }
@@ -1605,9 +1816,12 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
             return requireDriver().run(getArgs(listType));
         }
 
-        /** Lazily executes the Named Query and returns SObject records. */
-        public LazySObjectIterable fetchLazy() {
-            return new LazySObjectIterable((Iterable<SObject>) requireDriver().runMore(getArgs(List<SObject>.class)));
+        /**
+         *  Lazily executes the Named Query and returns SObject records.
+         *  @return Iterable of SObject records
+         */
+        public SObjectIterable fetchLazy() {
+            return new SObjectIterable((Iterable<SObject>) requireDriver().runMore(getArgs(List<SObject>.class)));
         }
 
         /**
@@ -1615,11 +1829,14 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
          * @param listType List<T>.class result type
          * @return Lazy projected records
          */
-        public LazyObjectIterable fetchLazyInto(final Type listType) {
-            return new LazyObjectIterable(requireDriver().runMore(getArgs(listType)));
+        public ObjectIterable fetchLazyInto(final Type listType) {
+            return new ObjectIterable(requireDriver().runMore(getArgs(listType)));
         }
 
-        /** Executes the Named Query and returns the response totalSize. */
+        /**
+         *  Executes the Named Query and returns the response totalSize.
+         *  @return Response total size
+         */
         public Integer fetchCount() {
             return requireDriver().count(getArgs(List<SObject>.class));
         }
@@ -1649,7 +1866,8 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
         Query.Builder customFields();
         Query.Builder standardFields();
         Query.Builder allDescribeFields();
-        Query.Builder allFields(Iterable<FieldProperty> properties);
+        Query.Builder allFields(List<FieldProperty> properties);
+        Query.Builder allFields(Set<FieldProperty> properties);
         Query.Builder allFields(FieldProperty property);
         Query.Builder allReadableFields();
         Query.Builder allEditableFields();
@@ -1675,8 +1893,10 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
         Query.Builder typeOf(TypeOf typeOf);
         // SELECT SubQuery
         Query.Builder subQuery(String relationshipName, Query.Builder subQuery);
-        Query.Builder subQuery(String relationshipName, SObjectType sObjType, Iterable<Object> fields);
-        Query.Builder subQuery(String relationshipName, String sObjType, Iterable<Object> fields);
+        Query.Builder subQuery(String relationshipName, SObjectType sObjType, List<Object> fields);
+        Query.Builder subQuery(String relationshipName, SObjectType sObjType, Set<Object> fields);
+        Query.Builder subQuery(String relationshipName, String sObjType, List<Object> fields);
+        Query.Builder subQuery(String relationshipName, String sObjType, Set<Object> fields);
         Query.Builder subQuery(String relationshipName, SObjectType sObjType, String fields);
         Query.Builder subQuery(String relationshipName, String sObjType, String fields);
         // SELECT Aggregate Functions
@@ -1697,12 +1917,15 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
         // WHERE
         Query.Builder addConditionEq(SObjectField field, Object value);
         Query.Builder addConditionNe(SObjectField field, Object value);
-        Query.Builder addConditionIn(SObjectField field, Iterable<Object> iterable);
+        Query.Builder addConditionIn(SObjectField field, List<Object> values);
+        Query.Builder addConditionIn(SObjectField field, Set<Object> values);
         Query.Builder addConditionIn(SObjectField field, Query.Builder semiJoinSubQuery);
-        Query.Builder addConditionNotIn(SObjectField field, Iterable<Object> iterable);
+        Query.Builder addConditionNotIn(SObjectField field, List<Object> values);
+        Query.Builder addConditionNotIn(SObjectField field, Set<Object> values);
         Query.Builder addConditionNotIn(SObjectField field, Query.Builder antiJoinSubQuery);
         Query.Builder byId(Id id);
-        Query.Builder byIds(Iterable<Id> ids);
+        Query.Builder byIds(List<Id> ids);
+        Query.Builder byIds(Set<Id> ids);
         // WITH
         Query.Builder withDataCategory(CategorySpec selection);
         // GROUP BY
@@ -1719,10 +1942,14 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
         Query.Builder addHavingOr(Query.Criterion condition);
         Query.Builder addHavingEq(SObjectField field, Object value);
         Query.Builder addHavingNe(SObjectField field, Object value);
-        Query.Builder addHavingIn(SObjectField field, Iterable<Object> iterable);
-        Query.Builder addHavingIn(String field, Iterable<Object> iterable);
-        Query.Builder addHavingNotIn(SObjectField field, Iterable<Object> iterable);
-        Query.Builder addHavingNotIn(String field, Iterable<Object> iterable);
+        Query.Builder addHavingIn(SObjectField field, List<Object> values);
+        Query.Builder addHavingIn(SObjectField field, Set<Object> values);
+        Query.Builder addHavingIn(String field, List<Object> values);
+        Query.Builder addHavingIn(String field, Set<Object> values);
+        Query.Builder addHavingNotIn(SObjectField field, List<Object> values);
+        Query.Builder addHavingNotIn(SObjectField field, Set<Object> values);
+        Query.Builder addHavingNotIn(String field, List<Object> values);
+        Query.Builder addHavingNotIn(String field, Set<Object> values);
         // ORDER BY
         Query.Builder orderBy(SObjectField field);
         Query.Builder orderBy(SObjectField field, Query.SortOrder sortOrder);
@@ -1741,7 +1968,8 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
         Query.Builder withMode(AccessLevel accessLevel);
         Query.Builder withSystemMode();
         Query.Builder withPermissionSetId(Id permissionSetId);
-        Query.Builder withPermissionSetIds(Iterable<Id> permissionSetIds);
+        Query.Builder withPermissionSetIds(List<Id> permissionSetIds);
+        Query.Builder withPermissionSetIds(Set<Id> permissionSetIds);
         Query.Builder withSharing();
         Query.Builder inheritedSharing();
         Query.Builder withoutSharing();
@@ -2374,10 +2602,10 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
         }
     }
 
-    public class LazySObjectIterable implements Iterable<SObject> {
+    public class SObjectIterable implements Iterable<SObject> {
         private final Iterable<SObject> source;
 
-        public LazySObjectIterable(final Iterable<SObject> source) {
+        public SObjectIterable(final Iterable<SObject> source) {
             this.source = source;
         }
 
@@ -2386,10 +2614,10 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
         }
     }
 
-    public class LazyObjectIterable implements Iterable<Object> {
+    public class ObjectIterable implements Iterable<Object> {
         private final Iterable<Object> source;
 
-        public LazyObjectIterable(final Iterable<Object> source) {
+        public ObjectIterable(final Iterable<Object> source) {
             this.source = source;
         }
 
@@ -3099,6 +3327,10 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
         private QueryArgs getArgs(Boolean isCount, Type listType) {
             validateNotNull(listType, 'listType');
             validateNotNull(elementType(listType), 'elementType');
+            validateIsTrue(
+                !(driver instanceof WithoutSharingDriver) || accessMode == AccessLevel.SYSTEM_MODE,
+                'withoutSharing requires AccessLevel.SYSTEM_MODE exactly.'
+            );
             final Compiled compiled = compile(isCount);
             QueryArgs args = new QueryArgs(compiled.query, compiled.inlineQuery, compiled.binds, accessMode);
             args.listType = listType;
@@ -3313,9 +3545,51 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
 
     public virtual inherited sharing class InheritedSharingDriver extends DatabaseDriver {
     }
+
     public virtual with sharing class WithSharingDriver extends DatabaseDriver {
+        // These methods must stay declared here to establish with-sharing execution; do not consolidate.
+        public override List<Object> run(final QueryArgs args) {
+            return super.run(args);
+        }
+
+        public override Integer count(final QueryArgs args) {
+            return super.count(args);
+        }
+
+        public override Database.QueryLocator locator(final QueryArgs args) {
+            return super.locator(args);
+        }
+
+        public override Database.Cursor cursor(final QueryArgs args) {
+            return super.cursor(args);
+        }
+
+        public override Database.PaginationCursor paginationCursor(final QueryArgs args) {
+            return super.paginationCursor(args);
+        }
     }
+
     public virtual without sharing class WithoutSharingDriver extends DatabaseDriver {
+        // These methods must stay declared here to establish without-sharing execution; do not consolidate.
+        public override List<Object> run(final QueryArgs args) {
+            return super.run(args);
+        }
+
+        public override Integer count(final QueryArgs args) {
+            return super.count(args);
+        }
+
+        public override Database.QueryLocator locator(final QueryArgs args) {
+            return super.locator(args);
+        }
+
+        public override Database.Cursor cursor(final QueryArgs args) {
+            return super.cursor(args);
+        }
+
+        public override Database.PaginationCursor paginationCursor(final QueryArgs args) {
+            return super.paginationCursor(args);
+        }
     }
 
     private inherited sharing class RestDescribeProvider implements DescribeProvider {
@@ -4136,7 +4410,7 @@ public virtual inherited sharing class SoqlQuery extends Query implements Builde
     @SuppressWarnings('PMD.AvoidDebugStatements')
     public virtual class RestDriver implements Driver {
         protected final Pattern apiVersionPattern = Pattern.compile('(?i)^v\\d+\\.\\d+$');
-        protected String apiVersion = 'v66.0';
+        protected String apiVersion = 'v67.0';
         protected final String namedCredential;
         protected final DescribeProvider describeProvider = new RestDescribeProvider(this);
         protected RestEngine engine = new QueryEngine();

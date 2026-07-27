@@ -181,6 +181,19 @@ private class SqlQueryTest {
     }
 
     @IsTest
+    static void should_handle_fields_set_overload() {
+        // Arrange
+        SqlQuery q = new TestSqlQuery('account');
+        q.field('Name').fields(new Set<Object>{ 'AccountNumber', 'Description' });
+
+        // Act
+        String actual = q.toString();
+
+        // Assert
+        Assert.areEqual('SELECT Name, AccountNumber, Description FROM account', actual);
+    }
+
+    @IsTest
     static void should_handle_aliased_fields_and_complex_selections() {
         // Arrange
         SqlQuery q = new TestSqlQuery('account')
@@ -1761,6 +1774,48 @@ private class SqlQueryTest {
     }
 
     @IsTest
+    static void should_handle_byids_set_overload_and_typed_nulls() {
+        // Arrange
+        Set<String> testIds = new Set<String>{ '00000001', '00000002' };
+
+        // Act
+        SqlQuery q1 = new TestSqlQuery('contact').byIds(testIds);
+        SqlQuery q2 = new TestSqlQuery('contact').byIds((List<String>) null);
+        SqlQuery q3 = new TestSqlQuery('contact').byIds((Set<String>) null);
+
+        // Assert
+        Assert.areEqual('SELECT * FROM contact WHERE Id IN :var$0', q1.toString());
+        Assert.areEqual(testIds, q1.getBindings().get('var$0'));
+        Assert.isNull(q2.getBindings().get('var$0'), 'byIds typed List null binding');
+        Assert.isNull(q3.getBindings().get('var$0'), 'byIds typed Set null binding');
+    }
+
+    @IsTest
+    static void should_handle_condition_in_set_overloads() {
+        // Arrange
+        SqlQuery q1 = new TestSqlQuery('accounts').addConditionIn('Type', new Set<Object>{ 'Customer' });
+        SqlQuery q2 = new TestSqlQuery('users').addConditionNotIn('Role', new Set<Object>{ 'Admin' });
+
+        // Act & Assert
+        Assert.areEqual('SELECT * FROM accounts WHERE Type IN :var$0', q1.toString());
+        Assert.areEqual(new Set<Object>{ 'Customer' }, q1.getBindings().get('var$0'));
+        Assert.areEqual('SELECT * FROM users WHERE Role NOT IN :var$0', q2.toString());
+        Assert.areEqual(new Set<Object>{ 'Admin' }, q2.getBindings().get('var$0'));
+    }
+
+    @IsTest
+    static void should_inline_render_in_condition_with_a_collection_value() {
+        // Arrange
+        SqlQuery q = new TestSqlQuery('t').addConditionIn('a', new List<Object>{ 1, 2 });
+
+        // Act
+        String inline = q.toInlineString();
+
+        // Assert
+        Assert.areEqual('SELECT * FROM t WHERE a IN (1, 2)', inline);
+    }
+
+    @IsTest
     static void should_handle_where_condition_chaining_and_or() {
         // Arrange
         SqlQuery q1 = new TestSqlQuery('products')
@@ -1944,6 +1999,22 @@ private class SqlQueryTest {
 
         // Assert
         Assert.isTrue(sql.contains('GROUP BY ROLLUP (a, b), CUBE (c, d)'));
+    }
+
+    @IsTest
+    static void should_handle_group_by_family_set_overloads() {
+        // Arrange
+        SqlQuery q = new TestSqlQuery('sales');
+
+        // Act
+        q.groupBy(new Set<Object>{ 'Region' })
+            .groupByRollup(new Set<Object>{ 'Year' })
+            .groupByCube(new Set<Object>{ 'Product' })
+            .groupByGroupingSets(new Set<Object>{ 'Region' });
+
+        // Assert
+        String actual = q.toString();
+        Assert.isTrue(actual.contains('GROUP BY Region, ROLLUP (Year), CUBE (Product), GROUPING SETS (Region)'));
     }
 
     @IsTest
@@ -2168,6 +2239,22 @@ private class SqlQueryTest {
         // Assert
         Assert.areEqual('SELECT * FROM sales GROUP BY Region HAVING SUM(Total) > 1000 AND Region IN :var$0', sql);
         Assert.areEqual(new List<String>{ 'North', 'South', 'East' }, q.getBindings().get('var$0'));
+    }
+
+    @IsTest
+    static void should_handle_having_in_set_overload() {
+        // Arrange
+        SqlQuery q = new TestSqlQuery('sales')
+            .groupBy('Region')
+            .havingx('SUM(Total) > 1000')
+            .addHavingIn('Region', new Set<Object>{ 'North' });
+
+        // Act
+        String sql = q.toString();
+
+        // Assert
+        Assert.areEqual('SELECT * FROM sales GROUP BY Region HAVING SUM(Total) > 1000 AND Region IN :var$0', sql);
+        Assert.areEqual(new Set<Object>{ 'North' }, q.getBindings().get('var$0'));
     }
 
     @IsTest
@@ -4157,13 +4244,48 @@ private class SqlQueryTest {
 
     @IsTest
     static void should_support_stub_api_for_sql_query() {
+        // Arrange
+        RecordingStubProvider provider = new RecordingStubProvider();
+        SqlQuery stubbed = (SqlQuery) Test.createStub(SqlQuery.class, provider);
+
         // Act
-        SqlQuery stubbed = (SqlQuery) Test.createStub(SqlQuery.class, new EchoStubProvider());
-        SqlQuery returned = stubbed.fields(new List<Object>{ 'Id', 'Name' });
+        SqlQuery afterList = stubbed.fields(new List<Object>{ 'Id', 'Name' });
+        SqlQuery afterSet = stubbed.fields(new Set<Object>{ 'Id', 'Name' });
 
         // Assert
-        Assert.isNotNull(stubbed, 'SqlQuery should expose a Stub API-compatible fluent surface');
-        Assert.isTrue(stubbed === returned, 'Bridged fluent calls should retain the concrete stub type');
+        Assert.isTrue(stubbed === afterList, 'List<T> fluent call should retain the concrete stub type');
+        Assert.isTrue(stubbed === afterSet, 'Set<T> fluent call should retain the concrete stub type');
+        Assert.areEqual('fields', provider.calls[0].methodName);
+        Assert.areEqual('List<ANY>', provider.calls[0].paramTypeName);
+        Assert.areEqual('fields', provider.calls[1].methodName);
+        Assert.areEqual('Set<ANY>', provider.calls[1].paramTypeName);
+    }
+
+    @IsTest
+    static void should_support_stub_api_for_sql_query_collection_families() {
+        // Arrange
+        RecordingStubProvider provider = new RecordingStubProvider();
+        SqlQuery stubbed = (SqlQuery) Test.createStub(SqlQuery.class, provider);
+
+        // Act & Assert: every collection family must dispatch through the generated stub
+        // without an unsupported signature invalidating the whole stub class.
+        Assert.isTrue(stubbed === stubbed.addConditionIn('Type', new List<Object>{ 'Customer' }));
+        Assert.isTrue(stubbed === stubbed.addConditionIn('Type', new Set<Object>{ 'Customer' }));
+        Assert.isTrue(stubbed === stubbed.addConditionNotIn('Type', new List<Object>{ 'Customer' }));
+        Assert.isTrue(stubbed === stubbed.addConditionNotIn('Type', new Set<Object>{ 'Customer' }));
+        Assert.isTrue(stubbed === stubbed.byIds(new List<String>{ '001' }));
+        Assert.isTrue(stubbed === stubbed.byIds(new Set<String>{ '001' }));
+        Assert.isTrue(stubbed === stubbed.groupBy(new List<Object>{ 'Type' }));
+        Assert.isTrue(stubbed === stubbed.groupBy(new Set<Object>{ 'Type' }));
+        Assert.isTrue(stubbed === stubbed.groupByRollup(new List<Object>{ 'Type' }));
+        Assert.isTrue(stubbed === stubbed.groupByRollup(new Set<Object>{ 'Type' }));
+        Assert.isTrue(stubbed === stubbed.groupByCube(new List<Object>{ 'Type' }));
+        Assert.isTrue(stubbed === stubbed.groupByCube(new Set<Object>{ 'Type' }));
+        Assert.isTrue(stubbed === stubbed.groupByGroupingSets(new List<Object>{ 'Type' }));
+        Assert.isTrue(stubbed === stubbed.groupByGroupingSets(new Set<Object>{ 'Type' }));
+        Assert.isTrue(stubbed === stubbed.addHavingIn('Type', new List<Object>{ 'Customer' }));
+        Assert.isTrue(stubbed === stubbed.addHavingIn('Type', new Set<Object>{ 'Customer' }));
+        Assert.areEqual(16, provider.calls.size(), 'Every dispatched call should be recorded');
     }
     // </editor-fold>
 
@@ -4219,6 +4341,33 @@ private class SqlQueryTest {
 
         public Object explain(SqlQuery.QueryArgs args) {
             return null;
+        }
+    }
+
+    private class RecordedCall {
+        private final String methodName;
+        private final String paramTypeName;
+
+        private RecordedCall(final String methodName, final String paramTypeName) {
+            this.methodName = methodName;
+            this.paramTypeName = paramTypeName;
+        }
+    }
+
+    private class RecordingStubProvider implements System.StubProvider {
+        private final List<RecordedCall> calls = new List<RecordedCall>();
+
+        public Object handleMethodCall(
+            Object stubbedObject,
+            String stubbedMethodName,
+            Type returnType,
+            List<Type> listOfParamTypes,
+            List<String> listOfParamNames,
+            List<Object> listOfArgs
+        ) {
+            String paramTypeName = listOfParamTypes.isEmpty() ? null : listOfParamTypes[0].toString();
+            calls.add(new RecordedCall(stubbedMethodName, paramTypeName));
+            return stubbedObject;
         }
     }
 

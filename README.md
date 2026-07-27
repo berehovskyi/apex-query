@@ -82,13 +82,13 @@ Install in dependency order:
 ### Core (SOQL)
 
 ```sh pkg::apex-query
-sf package install -p 04tfj000000N6W9AAK -o <org-alias> -r -w 10
+sf package install -p 04tfj000000ORS5AAO -o <org-alias> -r -w 10
 ```
 
 ### (Optional) SQL layer (SQL + PostgreSQL + MySQL)
 
 ```sh pkg::apex-sql-query
-sf package install -p 04tfj000000N6pVAAS -o <org-alias> -r -w 10
+sf package install -p 04tfj000000ORThAAO -o <org-alias> -r -w 10
 ```
 
 ### (Optional) Data 360 layer (CDP/Data Cloud Query)
@@ -602,14 +602,22 @@ q.allRows();
 
 ### Security & Privacy
 
-Control the execution mode and sharing policies. By default, queries run in **User Mode** and use **Inherited Sharing**.
+Control access enforcement and record-sharing behavior independently. By default, queries run in **User Mode** with
+an **Inherited Sharing** driver; User Mode enforces record sharing, so the effective default is `with sharing`.
 
 ```apex
-// Enforcing User Mode and sharing (Default)
+// Default: User Mode + Inherited Sharing, effectively with sharing
+q.fetch();
+
+// User Mode + explicit sharing enforcement
 q.withUserMode()
  .withSharing();
 
-// Elevated Privileges (System Mode)
+// System Mode + sharing enforcement
+q.withSystemMode()
+ .withSharing();
+
+// System Mode + sharing bypass
 q.withSystemMode()
  .withoutSharing();
 
@@ -619,16 +627,28 @@ q.withStrip(AccessType.READABLE);
 
 **Available Security Methods:**
 
-| Method                      | Description                                                                                             |
-| :-------------------------- | :------------------------------------------------------------------------------------------------------ |
-| `withUserMode()`            | Executes in User Mode (CRUD/FLS) (**Default**). Implies `with sharing`.                                 |
-| `withSystemMode()`          | Executes in System Mode (CRUD/FLS).                                                                     |
-| `withSharing()`             | Forces the class to respect sharing model.                                                              |
-| `withoutSharing()`          | Forces the class to ignore sharing model.                                                               |
-| `inheritedSharing()`        | Inherits sharing from the caller (**Default**).                                                         |
-| `withPermissionSetId(id)`   | Restricts query permissions to a specific Permission Set in addition to the running user's permissions. |
-| `withPermissionSetIds(ids)` | Restricts query permissions to multiple Permission Sets in addition to the running user's permissions.  |
-| `withStrip(accessLevel)`    | Applies `Security.stripInaccessible` (CRUD/FLS) to the results.                                         |
+| Method                      | Description                                                                                                |
+| :-------------------------- | :--------------------------------------------------------------------------------------------------------- |
+| `withUserMode()`            | Enforces User Mode access, including CRUD/FLS and record sharing (**Default**).                            |
+| `withSystemMode()`          | Executes in System Mode; the selected class-sharing policy still applies independently.                    |
+| `withSharing()`             | Enforces class sharing in either access mode.                                                              |
+| `withoutSharing()`          | Bypasses class sharing. Supported only with `withSystemMode()`; otherwise execution fails before querying. |
+| `inheritedSharing()`        | Inherits class sharing in System Mode; in User Mode it is effectively `with sharing` (**Default**).        |
+| `withPermissionSetId(id)`   | Restricts query permissions to a specific Permission Set in addition to the running user's permissions.    |
+| `withPermissionSetIds(ids)` | Restricts query permissions to multiple Permission Sets in addition to the running user's permissions.     |
+| `withStrip(accessLevel)`    | Applies `Security.stripInaccessible` (CRUD/FLS) to the results.                                            |
+
+| Access mode   | `inheritedSharing()`             | `withSharing()`        | `withoutSharing()` |
+| :------------ | :------------------------------- | :--------------------- | :----------------- |
+| `USER_MODE`   | Effectively `with sharing`       | Enforces sharing       | Rejected           |
+| `SYSTEM_MODE` | Inherits the caller's class mode | Enforces class sharing | Bypasses sharing   |
+
+> [!IMPORTANT]
+> User Mode always enforces record sharing: `inheritedSharing()` is therefore effectively `with sharing`, while
+> `withoutSharing()` is rejected. The latter requires `AccessLevel.SYSTEM_MODE` exactly. The final configuration is
+> validated before the query executes, so both `.withSystemMode().withoutSharing()` and
+> `.withoutSharing().withSystemMode()` are valid, while any User Mode combination with `withoutSharing()` is rejected
+> without consuming a query.
 
 ### Caching
 
@@ -666,8 +686,9 @@ Executes queries within the current Salesforce org using native `Database` metho
 - **Mechanics**: Utilizes `Database.queryWithBinds` to support secure, dynamic binding.
 - **Sharing Models**:
     - `withSharing()`: Enforces the sharing model.
-    - `withoutSharing()`: Bypasses the sharing model.
-    - `inheritedSharing()`: Inherits sharing from the caller (**Default**).
+    - `withoutSharing()`: Bypasses the sharing model and therefore requires `SYSTEM_MODE`.
+    - `inheritedSharing()`: Inherits sharing from the caller in `SYSTEM_MODE`; effectively enforces sharing in
+      `USER_MODE` (**Default**).
 
 > [!NOTE]
 > Bindings supplied through `withBindings(...)` are merged after generated bindings. If a user binding has the same
@@ -1563,10 +1584,4 @@ Execution pipeline:
 
 ## Apex Stub API Compatibility
 
-`SoqlQuery` and `SqlQuery` are designed to work with Apex `Test.createStub`. The Apex Stub API cannot generate stub classes for some otherwise valid generic `Iterable`/`List` signatures. When the platform forces a choice on the concrete query class, **Stub API support takes priority over compile-time parameter type safety**.
-
-- Public builder interfaces retain typed collection contracts such as `Iterable<T>` and `List<T>`.
-- Affected concrete methods accept `Object`, immediately cast it to the documented collection type, and declare the actual requirement in ApexDoc. Passing the intended iterable/list remains source-compatible; passing another object compiles against the concrete class but fails at the runtime cast.
-- Lazy concrete return types are small covariant adapters that implement `Iterable<T>`, wrap the driver's original iterable, and delegate `iterator()` without copying or eagerly loading results.
-
-Use the typed builder interfaces when compile-time collection validation is more important to application code. Use the concrete classes when configuring drivers or creating Stub API-generated test doubles.
+`SoqlQuery` and `SqlQuery` are designed to work with Apex `Test.createStub`.

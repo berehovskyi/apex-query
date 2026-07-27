@@ -8,7 +8,7 @@ private class RestDriverTest {
         // Arrange
         MockRest mock = new MockRest();
         mock.addResponse(
-            '/services/data/v66.0/query/?q=SELECT+Name+FROM+Account',
+            '/services/data/v99.0/query/?q=SELECT+Name+FROM+Account',
             '{"totalSize":1, "done":true, "records":[{"attributes":{"type":"Account"}, "Name":"Acme"}]}'
         );
         Test.setMock(HttpCalloutMock.class, mock);
@@ -29,16 +29,16 @@ private class RestDriverTest {
     static void should_execute_named_query_with_encoded_parameters() {
         // Arrange
         String expectedPath =
-            '/services/data/v66.0/named/query/AccountsByName?limit=10&name=' +
+            '/services/data/v99.0/named/query/AccountsByName?limit=10&name=' +
             EncodingUtil.urlEncode('Acme & Sons', 'UTF-8');
         MockRest mock = new MockRest();
         mock.addResponse(
             expectedPath,
-            '{"totalSize":2,"done":false,"nextRecordsUrl":"/services/data/v66.0/query/01gNamed-2",' +
+            '{"totalSize":2,"done":false,"nextRecordsUrl":"/services/data/v99.0/query/01gNamed-2",' +
             '"records":[{"attributes":{"type":"Account"},"Name":"Acme & Sons"}]}'
         );
         mock.addResponse(
-            '/services/data/v66.0/query/01gNamed-2',
+            '/services/data/v99.0/query/01gNamed-2',
             '{"totalSize":2,"done":true,"records":[{"attributes":{"type":"Account"},"Name":"Beta"}]}'
         );
         Test.setMock(HttpCalloutMock.class, mock);
@@ -65,18 +65,45 @@ private class RestDriverTest {
         Assert.areEqual('batchSize=200', mock.headers.get('Sforce-Query-Options'));
         Assert.isTrue(mock.hasRequestedPath(expectedPath), 'Named Query endpoint and parameters');
         Assert.isTrue(
-            mock.hasRequestedPath('/services/data/v66.0/query/01gNamed-2'),
+            mock.hasRequestedPath('/services/data/v99.0/query/01gNamed-2'),
             'Named Query continuation endpoint'
         );
+    }
+
+    @IsTest
+    static void should_execute_named_query_convenience_and_lazy_operations_without_parameters() {
+        // Arrange
+        String expectedPath = '/services/data/v99.0/named/query/AccountsByName';
+        MockRest mock = new MockRest();
+        mock.addResponse(
+            expectedPath,
+            '{"totalSize":1,"done":true,"records":[{"attributes":{"type":"Account"},"Name":"Acme"}]}'
+        );
+        Test.setMock(HttpCalloutMock.class, mock);
+        SoqlQuery.Named query = SoqlQuery.ofNamed('AccountsByName').useRestDriver('MyOrg');
+
+        // Act
+        List<SObject> eagerRows = query.fetch();
+        Iterator<SObject> lazyRows = query.fetchLazy().iterator();
+        Iterator<Object> lazyMaps = query.fetchLazyInto(List<Map<String, Object>>.class).iterator();
+
+        // Assert
+        Assert.areEqual('Acme', eagerRows[0].get('Name'));
+        Assert.isTrue(lazyRows.hasNext());
+        Assert.areEqual('Acme', lazyRows.next().get('Name'));
+        Assert.isTrue(lazyMaps.hasNext());
+        Assert.areEqual('Acme', ((Map<String, Object>) lazyMaps.next()).get('Name'));
+        Assert.areEqual(3, mock.callCount);
+        Assert.isTrue(mock.hasRequestedPath(expectedPath));
     }
 
     @IsTest
     static void should_preserve_all_rows_text_inside_rest_query_literal() {
         // Arrange
         String expectedQuery = 'SELECT Name FROM Account WHERE Name = \'Acme ALL ROWS\'';
-        String expectedPath = '/services/data/v66.0/query/?q=' + EncodingUtil.urlEncode(expectedQuery, 'UTF-8');
+        String expectedPath = '/services/data/v99.0/query/?q=' + EncodingUtil.urlEncode(expectedQuery, 'UTF-8');
         String corruptedPath =
-            '/services/data/v66.0/queryAll/?q=' +
+            '/services/data/v99.0/queryAll/?q=' +
             EncodingUtil.urlEncode('SELECT Name FROM Account WHERE Name = \'Acme\'', 'UTF-8');
         String response = '{"totalSize":1, "done":true, "records":[{"attributes":{"type":"Account"}, "Name":"Acme ALL ROWS"}]}';
         MockRest mock = new MockRest();
@@ -101,7 +128,7 @@ private class RestDriverTest {
 
     @IsTest
     static void should_validate_api_version_format_for_rest_driver() {
-        for (String invalidVersion : new List<String>{ '66.0', 'v66', 'version66.0' }) {
+        for (String invalidVersion : new List<String>{ '99.0', 'v99', 'version99.0' }) {
             try {
                 new SoqlQuery.RestDriver('MyOrg').setApiVersion(invalidVersion);
                 Assert.fail('Expected QueryException for invalid API version format: ' + invalidVersion);
@@ -146,7 +173,7 @@ private class RestDriverTest {
         }
         MockRest mock = new MockRest();
         mock.addResponse(
-            '/services/data/v66.0/query/?q=SELECT+Id+FROM+Account',
+            '/services/data/v99.0/query/?q=SELECT+Id+FROM+Account',
             '{"totalSize":0,"done":true,"records":[]}'
         );
         Test.setMock(HttpCalloutMock.class, mock);
@@ -166,7 +193,7 @@ private class RestDriverTest {
         // Arrange
         MockRest mock = new MockRest();
         mock.addResponse(
-            '/services/data/v66.0/tooling/query/?q=SELECT+Name+FROM+Account',
+            '/services/data/v99.0/tooling/query/?q=SELECT+Name+FROM+Account',
             '{"totalSize":1, "done":true, "records":[{"attributes":{"type":"Account"}, "Name":"ToolingAcme"}]}'
         );
         Test.setMock(HttpCalloutMock.class, mock);
@@ -193,10 +220,10 @@ private class RestDriverTest {
         // Arrange
         Id id1 = fakeId(Account.SObjectType);
         MockRest mock = new MockRest();
-        mock.addResponse('/services/data/v66.0/jobs/query', '{"id":"750TEST001"}');
-        mock.addResponse('/services/data/v66.0/jobs/query/750TEST001', '{"id":"750TEST001","state":"JobComplete"}');
+        mock.addResponse('/services/data/v99.0/jobs/query', '{"id":"750TEST001"}');
+        mock.addResponse('/services/data/v99.0/jobs/query/750TEST001', '{"id":"750TEST001","state":"JobComplete"}');
         mock.addResponse(
-            '/services/data/v66.0/jobs/query/750TEST001/results',
+            '/services/data/v99.0/jobs/query/750TEST001/results',
             '"Id","Name","Owner.Name"' + '\n' + '"' + id1 + '","Acme","User User"'
         );
         Test.setMock(HttpCalloutMock.class, mock);
@@ -226,12 +253,12 @@ private class RestDriverTest {
     static void should_use_bulk_status_object_as_root_type() {
         // Arrange
         MockRest mock = new MockRest();
-        mock.addResponse('/services/data/v66.0/jobs/query', '{"id":"750TEST001B"}');
+        mock.addResponse('/services/data/v99.0/jobs/query', '{"id":"750TEST001B"}');
         mock.addResponse(
-            '/services/data/v66.0/jobs/query/750TEST001B',
+            '/services/data/v99.0/jobs/query/750TEST001B',
             '{"id":"750TEST001B","state":"JobComplete","object":"Contact"}'
         );
-        mock.addResponse('/services/data/v66.0/jobs/query/750TEST001B/results', '"Id","Name"' + '\n' + '"003A","John"');
+        mock.addResponse('/services/data/v99.0/jobs/query/750TEST001B/results', '"Id","Name"' + '\n' + '"003A","John"');
         Test.setMock(HttpCalloutMock.class, mock);
 
         SoqlQuery q = SoqlQuery.of('Account')
@@ -255,10 +282,10 @@ private class RestDriverTest {
     static void should_execute_bulk_v2_query_into_sobject() {
         // Arrange
         MockRest mock = new MockRest();
-        mock.addResponse('/services/data/v66.0/jobs/query', '{"id":"750TEST002"}');
-        mock.addResponse('/services/data/v66.0/jobs/query/750TEST002', '{"id":"750TEST002","state":"JobComplete"}');
+        mock.addResponse('/services/data/v99.0/jobs/query', '{"id":"750TEST002"}');
+        mock.addResponse('/services/data/v99.0/jobs/query/750TEST002', '{"id":"750TEST002","state":"JobComplete"}');
         mock.addResponse(
-            '/services/data/v66.0/jobs/query/750TEST002/results',
+            '/services/data/v99.0/jobs/query/750TEST002/results',
             '"Id","Name"' + '\n' + '"001000000000002AAA","Bulk SObject"'
         );
         Test.setMock(HttpCalloutMock.class, mock);
@@ -283,10 +310,10 @@ private class RestDriverTest {
     static void should_execute_bulk_v2_query_into_dto_and_normalize_custom_keys() {
         // Arrange
         MockRest mock = new MockRest();
-        mock.addResponse('/services/data/v66.0/jobs/query', '{"id":"750TEST003"}');
-        mock.addResponse('/services/data/v66.0/jobs/query/750TEST003', '{"id":"750TEST003","state":"JobComplete"}');
+        mock.addResponse('/services/data/v99.0/jobs/query', '{"id":"750TEST003"}');
+        mock.addResponse('/services/data/v99.0/jobs/query/750TEST003', '{"id":"750TEST003","state":"JobComplete"}');
         mock.addResponse(
-            '/services/data/v66.0/jobs/query/750TEST003/results',
+            '/services/data/v99.0/jobs/query/750TEST003/results',
             '"Id","Name","ExternalId__c","IsDeleted","Owner.Name","Owner.Profile.Name"' +
                 '\n' +
                 '"001000000000003AAA","Bulk DTO","EXT-1","false","User User","System Administrator"'
@@ -323,9 +350,9 @@ private class RestDriverTest {
     static void should_use_query_all_operation_for_bulk_v2_when_all_rows_is_requested() {
         // Arrange
         MockRest mock = new MockRest();
-        mock.addResponse('/services/data/v66.0/jobs/query', '{"id":"750TEST004"}');
-        mock.addResponse('/services/data/v66.0/jobs/query/750TEST004', '{"id":"750TEST004","state":"JobComplete"}');
-        mock.addResponse('/services/data/v66.0/jobs/query/750TEST004/results', '"Id"' + '\n' + '"001000000000004AAA"');
+        mock.addResponse('/services/data/v99.0/jobs/query', '{"id":"750TEST004"}');
+        mock.addResponse('/services/data/v99.0/jobs/query/750TEST004', '{"id":"750TEST004","state":"JobComplete"}');
+        mock.addResponse('/services/data/v99.0/jobs/query/750TEST004/results', '"Id"' + '\n' + '"001000000000004AAA"');
         Test.setMock(HttpCalloutMock.class, mock);
 
         SoqlQuery q = SoqlQuery.of('Account')
@@ -339,7 +366,7 @@ private class RestDriverTest {
         Test.stopTest();
 
         // Assert
-        String payload = mock.getRequestBody('/services/data/v66.0/jobs/query');
+        String payload = mock.getRequestBody('/services/data/v99.0/jobs/query');
         Assert.isNotNull(payload);
         Assert.isTrue(payload.contains('"operation":"queryAll"'));
         Assert.isFalse(payload.toLowerCase().contains(' all rows'));
@@ -349,9 +376,9 @@ private class RestDriverTest {
     static void should_strip_only_trailing_all_rows_from_bulk_v2_query() {
         // Arrange
         MockRest mock = new MockRest();
-        mock.addResponse('/services/data/v66.0/jobs/query', '{"id":"750TEST004B"}');
-        mock.addResponse('/services/data/v66.0/jobs/query/750TEST004B', '{"id":"750TEST004B","state":"JobComplete"}');
-        mock.addResponse('/services/data/v66.0/jobs/query/750TEST004B/results', '"Id"' + '\n' + '"001000000000004AAA"');
+        mock.addResponse('/services/data/v99.0/jobs/query', '{"id":"750TEST004B"}');
+        mock.addResponse('/services/data/v99.0/jobs/query/750TEST004B', '{"id":"750TEST004B","state":"JobComplete"}');
+        mock.addResponse('/services/data/v99.0/jobs/query/750TEST004B/results', '"Id"' + '\n' + '"001000000000004AAA"');
         Test.setMock(HttpCalloutMock.class, mock);
 
         SoqlQuery q = SoqlQuery.of('Account')
@@ -367,7 +394,7 @@ private class RestDriverTest {
 
         // Assert
         Map<String, Object> payload = (Map<String, Object>) JSON.deserializeUntyped(
-            mock.getRequestBody('/services/data/v66.0/jobs/query')
+            mock.getRequestBody('/services/data/v99.0/jobs/query')
         );
         Assert.areEqual('queryAll', payload.get('operation'));
         Assert.areEqual(
@@ -381,9 +408,9 @@ private class RestDriverTest {
     static void should_apply_max_records_request_parameter_for_bulk_v2_results() {
         // Arrange
         MockRest mock = new MockRest();
-        mock.addResponse('/services/data/v66.0/jobs/query', '{"id":"750TEST005"}');
-        mock.addResponse('/services/data/v66.0/jobs/query/750TEST005', '{"id":"750TEST005","state":"JobComplete"}');
-        mock.addResponse('/services/data/v66.0/jobs/query/750TEST005/results?maxRecords=1', '"Id"' + '\n' + '"001"');
+        mock.addResponse('/services/data/v99.0/jobs/query', '{"id":"750TEST005"}');
+        mock.addResponse('/services/data/v99.0/jobs/query/750TEST005', '{"id":"750TEST005","state":"JobComplete"}');
+        mock.addResponse('/services/data/v99.0/jobs/query/750TEST005/results?maxRecords=1', '"Id"' + '\n' + '"001"');
         Test.setMock(HttpCalloutMock.class, mock);
 
         SoqlQuery q = SoqlQuery.of('Account')
@@ -397,7 +424,7 @@ private class RestDriverTest {
 
         // Assert
         Assert.isTrue(
-            mock.hasRequestedPath('/services/data/v66.0/jobs/query/750TEST005/results?maxRecords=1'),
+            mock.hasRequestedPath('/services/data/v99.0/jobs/query/750TEST005/results?maxRecords=1'),
             'Expected Bulk results request to include maxRecords query parameter'
         );
     }
@@ -406,15 +433,15 @@ private class RestDriverTest {
     static void should_not_follow_bulk_locator_when_query_more_disabled() {
         // Arrange
         MockRest mock = new MockRest();
-        mock.addResponse('/services/data/v66.0/jobs/query', '{"id":"750TEST006"}');
-        mock.addResponse('/services/data/v66.0/jobs/query/750TEST006', '{"id":"750TEST006","state":"JobComplete"}');
+        mock.addResponse('/services/data/v99.0/jobs/query', '{"id":"750TEST006"}');
+        mock.addResponse('/services/data/v99.0/jobs/query/750TEST006', '{"id":"750TEST006","state":"JobComplete"}');
         mock.addResponse(
-            '/services/data/v66.0/jobs/query/750TEST006/results?maxRecords=1',
+            '/services/data/v99.0/jobs/query/750TEST006/results?maxRecords=1',
             '"Id","Name"' + '\n' + '"001A","A"',
             new Map<String, String>{ 'Sforce-Locator' => 'loc-1' }
         );
         mock.addResponse(
-            '/services/data/v66.0/jobs/query/750TEST006/results?maxRecords=1&locator=loc-1',
+            '/services/data/v99.0/jobs/query/750TEST006/results?maxRecords=1&locator=loc-1',
             '"Id","Name"' + '\n' + '"001B","B"',
             new Map<String, String>{ 'Sforce-Locator' => 'null' }
         );
@@ -433,7 +460,7 @@ private class RestDriverTest {
         // Assert
         Assert.areEqual(1, rows.size());
         Assert.isFalse(
-            mock.hasRequestedPath('/services/data/v66.0/jobs/query/750TEST006/results?maxRecords=1&locator=loc-1'),
+            mock.hasRequestedPath('/services/data/v99.0/jobs/query/750TEST006/results?maxRecords=1&locator=loc-1'),
             'Should not fetch additional locator page when queryMore is disabled'
         );
     }
@@ -442,15 +469,15 @@ private class RestDriverTest {
     static void should_follow_bulk_locator_when_query_more_enabled() {
         // Arrange
         MockRest mock = new MockRest();
-        mock.addResponse('/services/data/v66.0/jobs/query', '{"id":"750TEST007"}');
-        mock.addResponse('/services/data/v66.0/jobs/query/750TEST007', '{"id":"750TEST007","state":"JobComplete"}');
+        mock.addResponse('/services/data/v99.0/jobs/query', '{"id":"750TEST007"}');
+        mock.addResponse('/services/data/v99.0/jobs/query/750TEST007', '{"id":"750TEST007","state":"JobComplete"}');
         mock.addResponse(
-            '/services/data/v66.0/jobs/query/750TEST007/results?maxRecords=1',
+            '/services/data/v99.0/jobs/query/750TEST007/results?maxRecords=1',
             '"Id","Name"' + '\n' + '"001A","A"',
             new Map<String, String>{ 'Sforce-Locator' => 'loc-1' }
         );
         mock.addResponse(
-            '/services/data/v66.0/jobs/query/750TEST007/results?maxRecords=1&locator=loc-1',
+            '/services/data/v99.0/jobs/query/750TEST007/results?maxRecords=1&locator=loc-1',
             '"Id","Name"' + '\n' + '"001B","B"',
             new Map<String, String>{ 'Sforce-Locator' => 'null' }
         );
@@ -472,7 +499,7 @@ private class RestDriverTest {
         // Assert
         Assert.areEqual(2, rows.size());
         Assert.isTrue(
-            mock.hasRequestedPath('/services/data/v66.0/jobs/query/750TEST007/results?maxRecords=1&locator=loc-1'),
+            mock.hasRequestedPath('/services/data/v99.0/jobs/query/750TEST007/results?maxRecords=1&locator=loc-1'),
             'Should fetch additional locator page when queryMore is enabled'
         );
     }
@@ -481,15 +508,15 @@ private class RestDriverTest {
     static void should_fetch_bulk_locator_lazily() {
         // Arrange
         MockRest mock = new MockRest();
-        mock.addResponse('/services/data/v66.0/jobs/query', '{"id":"750TEST008"}');
-        mock.addResponse('/services/data/v66.0/jobs/query/750TEST008', '{"id":"750TEST008","state":"JobComplete"}');
+        mock.addResponse('/services/data/v99.0/jobs/query', '{"id":"750TEST008"}');
+        mock.addResponse('/services/data/v99.0/jobs/query/750TEST008', '{"id":"750TEST008","state":"JobComplete"}');
         mock.addResponse(
-            '/services/data/v66.0/jobs/query/750TEST008/results?maxRecords=1',
+            '/services/data/v99.0/jobs/query/750TEST008/results?maxRecords=1',
             '"Id","Name"' + '\n' + '"001A","A"',
             new Map<String, String>{ 'Sforce-Locator' => 'loc-1' }
         );
         mock.addResponse(
-            '/services/data/v66.0/jobs/query/750TEST008/results?maxRecords=1&locator=loc-1',
+            '/services/data/v99.0/jobs/query/750TEST008/results?maxRecords=1&locator=loc-1',
             '"Id","Name"' + '\n' + '"001B","B"',
             new Map<String, String>{ 'Sforce-Locator' => 'null' }
         );
@@ -508,7 +535,7 @@ private class RestDriverTest {
         Iterator<Object> it = q.fetchLazyInto(List<Map<String, Object>>.class).iterator();
         Assert.isTrue(it.hasNext(), 'First page should be fetched on first hasNext');
         Assert.isFalse(
-            mock.hasRequestedPath('/services/data/v66.0/jobs/query/750TEST008/results?maxRecords=1&locator=loc-1'),
+            mock.hasRequestedPath('/services/data/v99.0/jobs/query/750TEST008/results?maxRecords=1&locator=loc-1'),
             'Second page should not be fetched before first page is consumed'
         );
         it.next();
@@ -517,7 +544,7 @@ private class RestDriverTest {
 
         // Assert
         Assert.isTrue(
-            mock.hasRequestedPath('/services/data/v66.0/jobs/query/750TEST008/results?maxRecords=1&locator=loc-1'),
+            mock.hasRequestedPath('/services/data/v99.0/jobs/query/750TEST008/results?maxRecords=1&locator=loc-1'),
             'Second page should be fetched lazily'
         );
     }
@@ -546,7 +573,7 @@ private class RestDriverTest {
         Assert.areEqual(2, driver.requestedIdChunks[0].size());
         Assert.areEqual(id1, driver.requestedIdChunks[0][0]);
         Assert.isTrue(
-            driver.endpoints[0].contains('/services/data/v66.0/composite/sobjects/Account'),
+            driver.endpoints[0].contains('/services/data/v99.0/composite/sobjects/Account'),
             'Engine should call sObject Collections endpoint with encoded fields'
         );
         Assert.areEqual(2, rows.size());
@@ -653,11 +680,11 @@ private class RestDriverTest {
         // Arrange
         MockRest mock = new MockRest();
         mock.addResponse(
-            '/services/data/v66.0/query/?q=SELECT+Name+FROM+Account',
-            '{"totalSize":2, "done":false, "nextRecordsUrl":"/services/data/v66.0/query/batch2", "records":[{"attributes":{"type":"Account"}, "Name":"Batch1"}]}'
+            '/services/data/v99.0/query/?q=SELECT+Name+FROM+Account',
+            '{"totalSize":2, "done":false, "nextRecordsUrl":"/services/data/v99.0/query/batch2", "records":[{"attributes":{"type":"Account"}, "Name":"Batch1"}]}'
         );
         mock.addResponse(
-            '/services/data/v66.0/query/batch2',
+            '/services/data/v99.0/query/batch2',
             '{"totalSize":2, "done":true, "records":[{"attributes":{"type":"Account"}, "Name":"Batch2"}]}'
         );
         Test.setMock(HttpCalloutMock.class, mock);
@@ -686,7 +713,7 @@ private class RestDriverTest {
         // Arrange
         MockRest mock = new MockRest();
         mock.addResponse(
-            '/services/data/v66.0/query/?q=SELECT+Name+FROM+Account',
+            '/services/data/v99.0/query/?q=SELECT+Name+FROM+Account',
             '{"totalSize":0, "done":true, "records":[]}'
         );
         Test.setMock(HttpCalloutMock.class, mock);
@@ -708,10 +735,10 @@ private class RestDriverTest {
         // Arrange
         MockRest mock = new MockRest();
         mock.addResponse(
-            '/services/data/v66.0/query/?q=SELECT+Name+FROM+Account',
-            '{"totalSize":2, "done":false, "nextRecordsUrl":"/services/data/v66.0/query/fail-page", "records":[{"attributes":{"type":"Account"}, "Name":"Batch1"}]}'
+            '/services/data/v99.0/query/?q=SELECT+Name+FROM+Account',
+            '{"totalSize":2, "done":false, "nextRecordsUrl":"/services/data/v99.0/query/fail-page", "records":[{"attributes":{"type":"Account"}, "Name":"Batch1"}]}'
         );
-        mock.addError('/services/data/v66.0/query/fail-page', 500, 'Server Error');
+        mock.addError('/services/data/v99.0/query/fail-page', 500, 'Server Error');
         Test.setMock(HttpCalloutMock.class, mock);
 
         SoqlQuery q = SoqlQuery.of('Account')
@@ -742,7 +769,7 @@ private class RestDriverTest {
         // Arrange
         MockRest mock = new MockRest();
         mock.addResponse(
-            '/services/data/v66.0/query/?q=SELECT+COUNT%28%29+FROM+Account',
+            '/services/data/v99.0/query/?q=SELECT+COUNT%28%29+FROM+Account',
             '{"totalSize":42, "done":true, "records":[]}'
         );
         Test.setMock(HttpCalloutMock.class, mock);
@@ -762,9 +789,9 @@ private class RestDriverTest {
     static void should_preserve_all_rows_text_inside_rest_count_literal() {
         // Arrange
         String expectedQuery = 'SELECT COUNT() FROM Account WHERE Name = \'Acme ALL ROWS\'';
-        String expectedPath = '/services/data/v66.0/queryAll/?q=' + EncodingUtil.urlEncode(expectedQuery, 'UTF-8');
+        String expectedPath = '/services/data/v99.0/queryAll/?q=' + EncodingUtil.urlEncode(expectedQuery, 'UTF-8');
         String corruptedPath =
-            '/services/data/v66.0/queryAll/?q=' +
+            '/services/data/v99.0/queryAll/?q=' +
             EncodingUtil.urlEncode('SELECT COUNT() FROM Account WHERE Name = \'Acme\'', 'UTF-8');
         String response = '{"totalSize":1, "done":true, "records":[]}';
         MockRest mock = new MockRest();
@@ -792,7 +819,7 @@ private class RestDriverTest {
         // Arrange
         MockRest mock = new MockRest();
         mock.addResponse(
-            '/services/data/v66.0/tooling/query/?q=SELECT+COUNT%28%29+FROM+Account',
+            '/services/data/v99.0/tooling/query/?q=SELECT+COUNT%28%29+FROM+Account',
             '{"totalSize":7, "done":true, "records":[]}'
         );
         Test.setMock(HttpCalloutMock.class, mock);
@@ -840,9 +867,9 @@ private class RestDriverTest {
     static void should_execute_bulk_v2_count_from_number_records_processed() {
         // Arrange
         MockRest mock = new MockRest();
-        mock.addResponse('/services/data/v66.0/jobs/query', '{"id":"750TESTCOUNT"}');
+        mock.addResponse('/services/data/v99.0/jobs/query', '{"id":"750TESTCOUNT"}');
         mock.addResponse(
-            '/services/data/v66.0/jobs/query/750TESTCOUNT',
+            '/services/data/v99.0/jobs/query/750TESTCOUNT',
             '{"id":"750TESTCOUNT","state":"JobComplete","numberRecordsProcessed":42}'
         );
         Test.setMock(HttpCalloutMock.class, mock);
@@ -857,13 +884,13 @@ private class RestDriverTest {
 
         // Assert
         Assert.areEqual(42, count);
-        String createPayload = mock.getRequestBody('/services/data/v66.0/jobs/query');
+        String createPayload = mock.getRequestBody('/services/data/v99.0/jobs/query');
         Assert.isFalse(
             createPayload.toUpperCase().contains('COUNT('),
             'Bulk count should rewrite aggregate COUNT query to non-aggregate query'
         );
         Assert.isFalse(
-            mock.hasRequestedPath('/services/data/v66.0/jobs/query/750TESTCOUNT/results'),
+            mock.hasRequestedPath('/services/data/v99.0/jobs/query/750TESTCOUNT/results'),
             'Bulk count should not fetch results payload'
         );
     }
@@ -874,7 +901,7 @@ private class RestDriverTest {
     static void should_handle_rest_error() {
         // Arrange
         MockRest mock = new MockRest();
-        mock.addError('/services/data/v66.0/query/?q=SELECT+Name+FROM+Account', 400, 'Bad Request');
+        mock.addError('/services/data/v99.0/query/?q=SELECT+Name+FROM+Account', 400, 'Bad Request');
         Test.setMock(HttpCalloutMock.class, mock);
 
         SoqlQuery q = SoqlQuery.of('Account').field('Name').useDriver(new SoqlQuery.RestDriver('MyOrg'));
@@ -895,7 +922,7 @@ private class RestDriverTest {
         // Arrange
         MockRest mock = new MockRest();
         mock.addResponse(
-            '/services/data/v66.0/sobjects/Account/describe',
+            '/services/data/v99.0/sobjects/Account/describe',
             '{"name":"Account", "fields":[{"name":"Id", "updateable":false, "createable":false, "aggregatable":true, "calculated":false, "custom":false, "encrypted":false, "externalId":false, "filterable":true, "groupable":true, "idLookup":true, "nillable":false, "sortable":true, "unique":false}]}'
         );
         Test.setMock(HttpCalloutMock.class, mock);
@@ -932,7 +959,7 @@ private class RestDriverTest {
     static void should_throw_on_field_set_with_rest_descriptor() {
         // Arrange
         MockRest mock = new MockRest();
-        mock.addResponse('/services/data/v66.0/sobjects/Account/describe', '{"name":"Account", "fields":[]}');
+        mock.addResponse('/services/data/v99.0/sobjects/Account/describe', '{"name":"Account", "fields":[]}');
         Test.setMock(HttpCalloutMock.class, mock);
         SoqlQuery q = SoqlQuery.of('Account').useDriver(new SoqlQuery.RestDriver('MyOrg'));
 
@@ -951,7 +978,7 @@ private class RestDriverTest {
     static void should_cache_rest_describe_response() {
         // Arrange
         MockRest mock = new MockRest();
-        mock.addResponse('/services/data/v66.0/sobjects/Account/describe', '{"name":"Account", "fields":[]}');
+        mock.addResponse('/services/data/v99.0/sobjects/Account/describe', '{"name":"Account", "fields":[]}');
         Test.setMock(HttpCalloutMock.class, mock);
         SoqlQuery q = SoqlQuery.of('Account').useDriver(new SoqlQuery.RestDriver('MyOrg'));
 
@@ -969,7 +996,7 @@ private class RestDriverTest {
     static void should_prefix_rest_describe_endpoint_with_callout_scheme() {
         // Arrange
         MockRest mock = new MockRest();
-        mock.addResponse('/services/data/v66.0/sobjects/Account/describe', '{"name":"Account", "fields":[]}');
+        mock.addResponse('/services/data/v99.0/sobjects/Account/describe', '{"name":"Account", "fields":[]}');
         Test.setMock(HttpCalloutMock.class, mock);
         SoqlQuery.RestDriver driver = new SoqlQuery.RestDriver('MyOrg');
 
@@ -978,7 +1005,7 @@ private class RestDriverTest {
 
         // Assert
         Assert.areEqual(
-            'callout:MyOrg/services/data/v66.0/sobjects/Account/describe',
+            'callout:MyOrg/services/data/v99.0/sobjects/Account/describe',
             mock.endpoints[0],
             'Describe endpoint'
         );
@@ -1029,7 +1056,7 @@ private class RestDriverTest {
         // Arrange
         MockRest mock = new MockRest();
         mock.addResponse(
-            '/services/data/v66.0/query/?explain=SELECT+Name+FROM+Account',
+            '/services/data/v99.0/query/?explain=SELECT+Name+FROM+Account',
             '{"queryPlan":[{"cardinality":1, "sobjectType":"Account", "relativeCost":1.0, "sobjectCardinality":1, "notes":[], "fields":[]}]}'
         );
         Test.setMock(HttpCalloutMock.class, mock);
@@ -1080,7 +1107,7 @@ private class RestDriverTest {
         Map<String, Object> subQueryPage1 = new Map<String, Object>{
             'totalSize' => 5,
             'done' => false,
-            'nextRecordsUrl' => '/services/data/v66.0/query/0r8xx58oJdvoG0qAIE-200',
+            'nextRecordsUrl' => '/services/data/v99.0/query/0r8xx58oJdvoG0qAIE-200',
             'records' => new List<Object>{
                 new Map<String, Object>{
                     'attributes' => new Map<String, Object>{ 'type' => 'Task' },
@@ -1131,11 +1158,11 @@ private class RestDriverTest {
         };
 
         mock.addResponse(
-            '/services/data/v66.0/query/?q=' +
+            '/services/data/v99.0/query/?q=' +
             EncodingUtil.urlEncode('SELECT Name, (SELECT Subject FROM Tasks) FROM Account', 'UTF-8'),
             JSON.serialize(mainResponse)
         );
-        mock.addResponse('/services/data/v66.0/query/0r8xx58oJdvoG0qAIE-200', JSON.serialize(subQueryPage2));
+        mock.addResponse('/services/data/v99.0/query/0r8xx58oJdvoG0qAIE-200', JSON.serialize(subQueryPage2));
 
         Test.setMock(HttpCalloutMock.class, mock);
 
@@ -1212,7 +1239,7 @@ private class RestDriverTest {
 
         String query = 'SELECT Id, (SELECT Id, (SELECT Id FROM Cases) FROM Contacts) FROM Account';
         mock.addResponse(
-            '/services/data/v66.0/query/?q=' + EncodingUtil.urlEncode(query, 'UTF-8'),
+            '/services/data/v99.0/query/?q=' + EncodingUtil.urlEncode(query, 'UTF-8'),
             JSON.serialize(parentPage)
         );
         mock.addResponse('/grandchild/next', JSON.serialize(grandChildPage2));
@@ -1240,11 +1267,11 @@ private class RestDriverTest {
         // Arrange
         MockRest mock = new MockRest();
         mock.addResponse(
-            '/services/data/v66.0/query/?q=SELECT+Name+FROM+Account',
-            '{"totalSize":2, "done":false, "nextRecordsUrl":"/services/data/v66.0/query/next-page", "records":[{"attributes":{"type":"Account"}, "Name":"Batch1"}]}'
+            '/services/data/v99.0/query/?q=SELECT+Name+FROM+Account',
+            '{"totalSize":2, "done":false, "nextRecordsUrl":"/services/data/v99.0/query/next-page", "records":[{"attributes":{"type":"Account"}, "Name":"Batch1"}]}'
         );
         mock.addResponse(
-            '/services/data/v66.0/query/next-page',
+            '/services/data/v99.0/query/next-page',
             '{"totalSize":2, "done":true, "records":[{"attributes":{"type":"Account"}, "Name":"Batch2"}]}'
         );
         Test.setMock(HttpCalloutMock.class, mock);
@@ -1293,7 +1320,7 @@ private class RestDriverTest {
         };
 
         mock.addResponse(
-            '/services/data/v66.0/query/?q=' +
+            '/services/data/v99.0/query/?q=' +
             EncodingUtil.urlEncode('SELECT Id, (SELECT Subject FROM Tasks) FROM Account', 'UTF-8'),
             JSON.serialize(mainResponse)
         );
@@ -1321,7 +1348,7 @@ private class RestDriverTest {
         // Arrange
         MockRest mock = new MockRest();
         mock.addResponse(
-            '/services/data/v66.0/query/?q=SELECT+Id+FROM+Account',
+            '/services/data/v99.0/query/?q=SELECT+Id+FROM+Account',
             '{"totalSize":0, "done":true, "records":[]}'
         );
         Test.setMock(HttpCalloutMock.class, mock);
@@ -1374,7 +1401,7 @@ private class RestDriverTest {
         };
 
         mock.addResponse(
-            '/services/data/v66.0/query/?q=' +
+            '/services/data/v99.0/query/?q=' +
             EncodingUtil.urlEncode('SELECT Id, (SELECT Id FROM Tasks) FROM Account', 'UTF-8'),
             JSON.serialize(mainResponse)
         );
@@ -1448,7 +1475,7 @@ private class RestDriverTest {
         };
 
         mock.addResponse(
-            '/services/data/v66.0/query/?q=' +
+            '/services/data/v99.0/query/?q=' +
             EncodingUtil.urlEncode('SELECT Id, (SELECT Id FROM Tasks) FROM Account', 'UTF-8'),
             JSON.serialize(mainResponse)
         );
@@ -1515,7 +1542,7 @@ private class RestDriverTest {
         };
 
         mock.addResponse(
-            '/services/data/v66.0/query/?q=' + EncodingUtil.urlEncode(query, 'UTF-8'),
+            '/services/data/v99.0/query/?q=' + EncodingUtil.urlEncode(query, 'UTF-8'),
             JSON.serialize(mainResponse)
         );
         mock.addResponse('/sub/next', JSON.serialize(subPage2));
@@ -1584,7 +1611,7 @@ private class RestDriverTest {
             }
         };
         mock.addResponse(
-            '/services/data/v66.0/query/?q=' + EncodingUtil.urlEncode(query, 'UTF-8'),
+            '/services/data/v99.0/query/?q=' + EncodingUtil.urlEncode(query, 'UTF-8'),
             JSON.serialize(mainResponse)
         );
         mock.addError('/sub1/next', 400, 'bad id 0r8xx59BNIPeK0zaA2F');
@@ -1661,7 +1688,7 @@ private class RestDriverTest {
             }
         };
         mock.addResponse(
-            '/services/data/v66.0/query/?q=' + EncodingUtil.urlEncode(query, 'UTF-8'),
+            '/services/data/v99.0/query/?q=' + EncodingUtil.urlEncode(query, 'UTF-8'),
             JSON.serialize(mainResponse)
         );
         mock.addError('/batch-sub1/next', 400, 'bad id 0r8xx59BNIPeK0yA2aF');
@@ -1697,7 +1724,7 @@ private class RestDriverTest {
         // Arrange
         MockRest mock = new MockRest();
         mock.addResponse(
-            '/services/data/v66.0/query/?q=SELECT+Name+FROM+Account',
+            '/services/data/v99.0/query/?q=SELECT+Name+FROM+Account',
             '{"totalSize":1, "done":true, "records":[{"attributes":{"type":"Account"}, "Name":"Acme"}]}'
         );
         Test.setMock(HttpCalloutMock.class, mock);
@@ -1753,7 +1780,7 @@ private class RestDriverTest {
         };
 
         mock.addResponse(
-            '/services/data/v66.0/query/?q=' +
+            '/services/data/v99.0/query/?q=' +
             EncodingUtil.urlEncode('SELECT Id, (SELECT Id FROM Tasks) FROM Account', 'UTF-8'),
             JSON.serialize(mainResponse)
         );
@@ -1785,7 +1812,7 @@ private class RestDriverTest {
         // Arrange
         MockRest mock = new MockRest();
         mock.addResponse(
-            '/services/data/v66.0/query/?q=SELECT+Name+FROM+Account',
+            '/services/data/v99.0/query/?q=SELECT+Name+FROM+Account',
             '{"totalSize":1, "done":true, "records":[{"attributes":{"type":"Account"}, "Name":"TypedAcme"}]}'
         );
         Test.setMock(HttpCalloutMock.class, mock);
@@ -1809,7 +1836,7 @@ private class RestDriverTest {
         MockRest mock = new MockRest();
         // Main query response with a record and potential sub-query metadata (though hydration will be skipped)
         mock.addResponse(
-            '/services/data/v66.0/query/?q=SELECT+Name%2C+%28SELECT+LastName+FROM+Contacts%29+FROM+Account',
+            '/services/data/v99.0/query/?q=SELECT+Name%2C+%28SELECT+LastName+FROM+Contacts%29+FROM+Account',
             '{"totalSize":1, "done":true, "records":[{"attributes":{"type":"Account"}, "Name":"TypedAcme", "Contacts":{"totalSize":0, "done":true, "records":[]}}]}'
         );
         Test.setMock(HttpCalloutMock.class, mock);
@@ -2272,7 +2299,7 @@ private class RestDriverTest {
     @IsTest
     static void should_set_api_version_when_valid_pattern_is_provided() {
         // Arrange
-        MockRest mock = new MockRest();
+        MockRest mock = new MockRest('v65.0');
         mock.addResponse(
             '/services/data/v65.0/query/?q=SELECT+Name+FROM+Account',
             '{"totalSize":1, "done":true, "records":[{"attributes":{"type":"Account"}, "Name":"Acme65"}]}'
@@ -2295,7 +2322,7 @@ private class RestDriverTest {
     static void should_throw_when_describe_request_returns_non_200() {
         // Arrange
         MockRest mock = new MockRest();
-        mock.addError('/services/data/v66.0/sobjects/Account/describe', 500, 'Describe failed');
+        mock.addError('/services/data/v99.0/sobjects/Account/describe', 500, 'Describe failed');
         Test.setMock(HttpCalloutMock.class, mock);
         SoqlQuery.RestDriver driver = new SoqlQuery.RestDriver('MyOrg');
 
@@ -2313,7 +2340,7 @@ private class RestDriverTest {
         // Arrange
         MockRest mock = new MockRest();
         mock.addResponse(
-            '/services/data/v66.0/query/?q=SELECT+Name+FROM+Account',
+            '/services/data/v99.0/query/?q=SELECT+Name+FROM+Account',
             '{"totalSize":1, "done":true, "records":[{"attributes":{"type":"Account"}, "Name":"FetchFirstAs"}]}'
         );
         Test.setMock(HttpCalloutMock.class, mock);
@@ -2334,7 +2361,7 @@ private class RestDriverTest {
         // Arrange
         MockRest mock = new MockRest();
         mock.addResponse(
-            '/services/data/v66.0/query/?q=SELECT+Name+FROM+Account',
+            '/services/data/v99.0/query/?q=SELECT+Name+FROM+Account',
             '{"totalSize":1, "done":true, "records":[{"attributes":{"type":"Account"}, "Name":"Timed"}]}'
         );
         Test.setMock(HttpCalloutMock.class, mock);
@@ -2457,7 +2484,7 @@ private class RestDriverTest {
     static void should_throw_when_bulk_create_response_has_no_job_id() {
         // Arrange
         MockRest mock = new MockRest();
-        mock.addResponse('/services/data/v66.0/jobs/query', '{}');
+        mock.addResponse('/services/data/v99.0/jobs/query', '{}');
         Test.setMock(HttpCalloutMock.class, mock);
         SoqlQuery q = SoqlQuery.of('Account')
             .field('Id')
@@ -2476,9 +2503,9 @@ private class RestDriverTest {
     static void should_throw_when_bulk_job_state_is_failed() {
         // Arrange
         MockRest mock = new MockRest();
-        mock.addResponse('/services/data/v66.0/jobs/query', '{"id":"750FAILED"}');
+        mock.addResponse('/services/data/v99.0/jobs/query', '{"id":"750FAILED"}');
         mock.addResponse(
-            '/services/data/v66.0/jobs/query/750FAILED',
+            '/services/data/v99.0/jobs/query/750FAILED',
             '{"id":"750FAILED","state":"Failed","errorMessage":"boom"}'
         );
         Test.setMock(HttpCalloutMock.class, mock);
@@ -2499,8 +2526,8 @@ private class RestDriverTest {
     static void should_throw_when_bulk_status_request_returns_http_error() {
         // Arrange
         MockRest mock = new MockRest();
-        mock.addResponse('/services/data/v66.0/jobs/query', '{"id":"750HTTPERR"}');
-        mock.addError('/services/data/v66.0/jobs/query/750HTTPERR', 500, 'status failed');
+        mock.addResponse('/services/data/v99.0/jobs/query', '{"id":"750HTTPERR"}');
+        mock.addError('/services/data/v99.0/jobs/query/750HTTPERR', 500, 'status failed');
         Test.setMock(HttpCalloutMock.class, mock);
         SoqlQuery q = SoqlQuery.of('Account')
             .field('Id')
@@ -2519,8 +2546,8 @@ private class RestDriverTest {
     static void should_throw_when_bulk_poll_wait_exceeds_cpu_guard() {
         // Arrange
         MockRest mock = new MockRest();
-        mock.addResponse('/services/data/v66.0/jobs/query', '{"id":"750INPROG"}');
-        mock.addResponse('/services/data/v66.0/jobs/query/750INPROG', '{"id":"750INPROG","state":"InProgress"}');
+        mock.addResponse('/services/data/v99.0/jobs/query', '{"id":"750INPROG"}');
+        mock.addResponse('/services/data/v99.0/jobs/query/750INPROG', '{"id":"750INPROG","state":"InProgress"}');
         Test.setMock(HttpCalloutMock.class, mock);
         SoqlQuery.BulkV2QueryEngine engine = new SoqlQuery.BulkV2QueryEngine().setPollInterval(1000).setCpuTimeout(1);
         SoqlQuery q = SoqlQuery.of('Account')
@@ -2680,9 +2707,9 @@ private class RestDriverTest {
     static void should_throw_when_bulk_iterator_next_is_called_without_elements() {
         // Arrange
         MockRest mock = new MockRest();
-        mock.addResponse('/services/data/v66.0/jobs/query', '{"id":"750EMPTY"}');
-        mock.addResponse('/services/data/v66.0/jobs/query/750EMPTY', '{"id":"750EMPTY","state":"JobComplete"}');
-        mock.addResponse('/services/data/v66.0/jobs/query/750EMPTY/results', '');
+        mock.addResponse('/services/data/v99.0/jobs/query', '{"id":"750EMPTY"}');
+        mock.addResponse('/services/data/v99.0/jobs/query/750EMPTY', '{"id":"750EMPTY","state":"JobComplete"}');
+        mock.addResponse('/services/data/v99.0/jobs/query/750EMPTY/results', '');
         Test.setMock(HttpCalloutMock.class, mock);
         SoqlQuery q = SoqlQuery.of('Account')
             .field('Id')
@@ -2799,6 +2826,7 @@ private class RestDriverTest {
 
         private MockCollectionsDriver() {
             super('MockOrg');
+            setApiVersion('v99.0');
         }
 
         protected override HttpResponse send(HttpRequest req, String requestLabel) {
@@ -2928,6 +2956,7 @@ private class RestDriverTest {
     }
 
     private class MockRest implements HttpCalloutMock {
+        private final String defaultApiVersion;
         private final Map<String, String> responses = new Map<String, String>();
         private final Map<String, Map<String, String>> responseHeadersByPath = new Map<String, Map<String, String>>();
         private final Map<String, Integer> errors = new Map<String, Integer>();
@@ -2936,6 +2965,14 @@ private class RestDriverTest {
         public final Map<String, String> headers = new Map<String, String>();
         public final List<String> endpoints = new List<String>();
         public Integer callCount = 0;
+
+        private MockRest() {
+            this('v99.0');
+        }
+
+        private MockRest(final String defaultApiVersion) {
+            this.defaultApiVersion = defaultApiVersion;
+        }
 
         public void addResponse(String path, String body) {
             responses.put(path, body);
@@ -2966,7 +3003,7 @@ private class RestDriverTest {
                     headers.put(key, req.getHeader(key));
                 }
             }
-            String url = req.getEndpoint();
+            String url = withDefaultApiVersion(req.getEndpoint());
             endpoints.add(url);
 
             if (url.endsWith('/composite')) {
@@ -2975,7 +3012,7 @@ private class RestDriverTest {
                 List<Map<String, Object>> compositeResponse = new List<Map<String, Object>>();
                 for (Object r : requests) {
                     Map<String, Object> reqMap = (Map<String, Object>) r;
-                    String subUrl = (String) reqMap.get('url');
+                    String subUrl = withDefaultApiVersion((String) reqMap.get('url'));
                     String referenceId = (String) reqMap.get('referenceId');
 
                     if (errors.containsKey(subUrl)) {
@@ -3017,7 +3054,7 @@ private class RestDriverTest {
                 Boolean hasErrors = false;
                 for (Object r : requests) {
                     Map<String, Object> reqMap = (Map<String, Object>) r;
-                    String subUrl = (String) reqMap.get('url');
+                    String subUrl = withDefaultApiVersion((String) reqMap.get('url'));
 
                     if (errors.containsKey(subUrl)) {
                         hasErrors = true;
@@ -3070,9 +3107,14 @@ private class RestDriverTest {
             }
             return res;
         }
+
+        private String withDefaultApiVersion(final String path) {
+            return path.replaceFirst('(?i)/services/data/v\\d+\\.\\d+/', '/services/data/' + defaultApiVersion + '/');
+        }
     }
 
     private class MockRestEnvelopeCompat implements HttpCalloutMock {
+        private final String defaultApiVersion = 'v99.0';
         private final Map<String, String> responses = new Map<String, String>();
         private final Boolean forceBatchHasErrors;
         public Integer callCount = 0;
@@ -3087,7 +3129,7 @@ private class RestDriverTest {
 
         public HttpResponse respond(HttpRequest req) {
             callCount++;
-            String url = req.getEndpoint();
+            String url = withDefaultApiVersion(req.getEndpoint());
             if (url.endsWith('/composite')) {
                 return respondComposite(req);
             }
@@ -3114,7 +3156,7 @@ private class RestDriverTest {
 
             for (Object r : requests) {
                 Map<String, Object> reqMap = (Map<String, Object>) r;
-                String subUrl = (String) reqMap.get('url');
+                String subUrl = withDefaultApiVersion((String) reqMap.get('url'));
                 String referenceId = (String) reqMap.get('referenceId');
                 Integer status = responses.containsKey(subUrl) ? 200 : 404;
                 Object payload = status == 200 ? JSON.deserializeUntyped(responses.get(subUrl)) : null;
@@ -3142,7 +3184,7 @@ private class RestDriverTest {
             Integer idx = 0;
             for (Object r : requests) {
                 Map<String, Object> reqMap = (Map<String, Object>) r;
-                String subUrl = (String) reqMap.get('url');
+                String subUrl = withDefaultApiVersion((String) reqMap.get('url'));
                 Integer status = responses.containsKey(subUrl) ? 200 : 404;
                 Object payload = status == 200 ? JSON.deserializeUntyped(responses.get(subUrl)) : null;
                 compositeResponse.add(
@@ -3161,6 +3203,10 @@ private class RestDriverTest {
             Boolean hasErrors = forceBatchHasErrors == null ? false : forceBatchHasErrors;
             res.setBody(JSON.serialize(new Map<String, Object>{ 'hasErrors' => hasErrors, 'results' => results }));
             return res;
+        }
+
+        private String withDefaultApiVersion(final String path) {
+            return path.replaceFirst('(?i)/services/data/v\\d+\\.\\d+/', '/services/data/' + defaultApiVersion + '/');
         }
     }
     // </editor-fold>

@@ -247,7 +247,8 @@ public abstract class Query implements Builder, Bindable {
     public interface Builder {
         // SELECT Fields
         Builder field(String field);
-        Builder fields(Iterable<Object> fields);
+        Builder fields(List<Object> fields);
+        Builder fields(Set<Object> fields);
         Builder fields(String fields);
         Builder allFields();
         // SELECT Functions
@@ -277,14 +278,19 @@ public abstract class Query implements Builder, Bindable {
         Builder addConditionOr(String condition);
         Builder addConditionEq(String field, Object value);
         Builder addConditionNe(String field, Object value);
-        Builder addConditionIn(String field, Iterable<Object> iterable);
+        Builder addConditionIn(String field, List<Object> values);
+        Builder addConditionIn(String field, Set<Object> values);
         Builder addConditionIn(String field, Builder semiJoinSubQuery);
-        Builder addConditionNotIn(String field, Iterable<Object> iterable);
+        Builder addConditionNotIn(String field, List<Object> values);
+        Builder addConditionNotIn(String field, Set<Object> values);
         Builder addConditionNotIn(String field, Builder antiJoinSubQuery);
         // GROUP BY
-        Builder groupBy(Iterable<Object> fields);
-        Builder groupByRollup(Iterable<Object> fields);
-        Builder groupByCube(Iterable<Object> fields);
+        Builder groupBy(List<Object> fields);
+        Builder groupBy(Set<Object> fields);
+        Builder groupByRollup(List<Object> fields);
+        Builder groupByRollup(Set<Object> fields);
+        Builder groupByCube(List<Object> fields);
+        Builder groupByCube(Set<Object> fields);
         // HAVING
         Builder havingx(Criterion condition);
         Builder havingx(String condition);
@@ -295,7 +301,8 @@ public abstract class Query implements Builder, Bindable {
         Builder addHavingOr(Criterion condition);
         Builder addHavingOr(String condition);
         Builder addHavingEq(String field, Object value);
-        Builder addHavingIn(String field, Iterable<Object> iterable);
+        Builder addHavingIn(String field, List<Object> values);
+        Builder addHavingIn(String field, Set<Object> values);
         // ORDER BY
         Builder orderBy(String field);
         Builder orderBy(String field, SortOrder sortOrder);

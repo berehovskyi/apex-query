@@ -4,18 +4,18 @@
             "default": true,
             "package": "apex-query",
             "path": "sfdx-source/apex-query",
-            "versionName": "ver 0.2",
-            "versionNumber": "0.2.0.NEXT"
+            "versionName": "ver 0.3",
+            "versionNumber": "0.3.0.NEXT"
         },
         {
             "package": "apex-sql-query",
             "path": "sfdx-source/apex-sql-query",
-            "versionName": "ver 0.2",
-            "versionNumber": "0.2.0.NEXT",
+            "versionName": "ver 0.3",
+            "versionNumber": "0.3.0.NEXT",
             "dependencies": [
                 {
                     "package": "apex-query",
-                    "versionNumber": "0.2.0.LATEST"
+                    "versionNumber": "0.3.0.LATEST"
                 }
             ]
         }
@@ -24,7 +24,7 @@
     "packageAliases": {
         "apex-query": "0Hofj0000002NOjCAM",
         "apex-sql-query": "0Hofj0000002NVBCA2",
-        "apex-query@latest": "04tfj000000N6W9AAK",
-        "apex-sql-query@latest": "04tfj000000N6pVAAS"
+        "apex-query@latest": "04tfj000000ORS5AAO",
+        "apex-sql-query@latest": "04tfj000000ORThAAO"
     }
 }

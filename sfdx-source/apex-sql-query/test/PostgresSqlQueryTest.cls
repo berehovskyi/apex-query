@@ -216,6 +216,46 @@ private class PostgresSqlQueryTest {
     }
 
     @IsTest
+    static void should_apply_distinct_on_set_overload() {
+        // Arrange
+        PostgresSqlQuery q = PostgresSqlQuery.of('weather_reports');
+
+        // Act
+        q.distinctOn(new Set<Object>{ 'location' }).field('location').field('time');
+
+        // Assert
+        String sql = q.toString();
+        Assert.areEqual('SELECT DISTINCT ON (location) location, time FROM weather_reports', sql);
+    }
+
+    @IsTest
+    static void should_support_stub_api_for_postgres_sql_query() {
+        // Arrange
+        RecordingStubProvider provider = new RecordingStubProvider();
+        PostgresSqlQuery stubbed = (PostgresSqlQuery) Test.createStub(PostgresSqlQuery.class, provider);
+
+        // Act
+        PostgresSqlQuery afterList = stubbed.distinctOn(new List<Object>{ 'location' });
+        PostgresSqlQuery afterSet = stubbed.distinctOn(new Set<Object>{ 'location' });
+        SqlQuery afterFields = stubbed.fields(new List<Object>{ 'Id' });
+
+        // Assert
+        Assert.isTrue(stubbed === afterList, 'distinctOn List<T> should retain the concrete stub type');
+        Assert.isTrue(stubbed === afterSet, 'distinctOn Set<T> should retain the concrete stub type');
+        Assert.isTrue(stubbed === afterFields, 'Inherited fields List<T> should retain the concrete stub type');
+        Assert.areEqual('distinctOn', provider.calls[0].methodName);
+        Assert.areEqual('List<ANY>', provider.calls[0].paramTypeName);
+        Assert.areEqual(new List<Object>{ 'location' }, provider.calls[0].arg);
+        Assert.areEqual('distinctOn', provider.calls[1].methodName);
+        Assert.areEqual('Set<ANY>', provider.calls[1].paramTypeName);
+        Assert.areEqual(new Set<Object>{ 'location' }, provider.calls[1].arg);
+        Assert.areEqual('fields', provider.calls[2].methodName);
+        Assert.areEqual('List<ANY>', provider.calls[2].paramTypeName);
+        Assert.areEqual(new List<Object>{ 'Id' }, provider.calls[2].arg);
+        Assert.areEqual(3, provider.calls.size(), 'Every dispatched call should be recorded');
+    }
+
+    @IsTest
     static void should_expose_distinct_on_state_when_accessed_from_subclass() {
         // Arrange
         PostgresSqlQueryProbe q = new PostgresSqlQueryProbe();
@@ -406,6 +446,36 @@ private class PostgresSqlQueryTest {
 
         public List<Object> distinctOnExpressionsProbe() {
             return getDistinctOnExpressions();
+        }
+    }
+
+    private class RecordedCall {
+        private final String methodName;
+        private final String paramTypeName;
+        private final Object arg;
+
+        private RecordedCall(final String methodName, final String paramTypeName, final Object arg) {
+            this.methodName = methodName;
+            this.paramTypeName = paramTypeName;
+            this.arg = arg;
+        }
+    }
+
+    private class RecordingStubProvider implements System.StubProvider {
+        private final List<RecordedCall> calls = new List<RecordedCall>();
+
+        public Object handleMethodCall(
+            Object stubbedObject,
+            String stubbedMethodName,
+            Type returnType,
+            List<Type> listOfParamTypes,
+            List<String> listOfParamNames,
+            List<Object> listOfArgs
+        ) {
+            String paramTypeName = listOfParamTypes.isEmpty() ? null : listOfParamTypes[0].toString();
+            Object arg = listOfArgs.isEmpty() ? null : listOfArgs[0];
+            calls.add(new RecordedCall(stubbedMethodName, paramTypeName, arg));
+            return stubbedObject;
         }
     }
 }

@@ -18,12 +18,24 @@ The framework follows a **Unified Query Engine** approach. It isn't just a SOQL 
 
 ### Apex Stub API Compatibility
 
-The concrete `SoqlQuery` and `SqlQuery` classes are intended to support `Test.createStub`. Apex Stub API support takes priority over compile-time parameter type safety on the concrete class when the platform cannot generate an otherwise valid generic collection signature.
+The concrete `SoqlQuery` and `SqlQuery` classes must support
+`Test.createStub`. Stub API compatibility and compile-time type safety are both
+public API requirements.
 
-- Public builder interfaces retain typed `Iterable<T>` and `List<T>` parameters.
-- Affected concrete methods accept `Object`, immediately cast to the documented collection type, and identify the required runtime type in ApexDoc. Concrete callers therefore lose compile-time checking for those parameters; interface-typed callers remain type-safe.
-- Lazy return methods use covariant concrete adapters that implement `Iterable<T>`, wrap the original iterable, and delegate `iterator()` without copying or materializing results. Return types are never widened to `Object`.
-- A single unsupported public method can invalidate an entire generated stub class, so both query implementations have regression coverage that creates a stub and invokes a bridged fluent method.
+- Do not expose parameterized interfaces such as `Iterable<T>` as parameters on
+  the public virtual concrete surface when they prevent stub generation.
+- Expose matching `List<T>` and `Set<T>` overloads on builder interfaces and
+  concrete classes. Do not widen the concrete parameter to `Object` and do not
+  rely on interface parameter contravariance.
+- Delegate repeated `List<T>` and `Set<T>` overloads to a differently named
+  private helper that accepts `Iterable<T>`. A same-named private iterable helper
+  creates ambiguous overload resolution in Apex.
+- Lazy return methods use covariant concrete adapters that implement
+  `Iterable<T>`, wrap the original iterable, and delegate `iterator()` without
+  copying or materializing results. Return types are never widened to `Object`.
+- A single unsupported public method can invalidate an entire generated stub
+  class. Keep regression coverage that creates each concrete query stub and
+  invokes both collection overloads and parameterized-return wrappers.
 
 ---
 

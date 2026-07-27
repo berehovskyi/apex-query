@@ -59,6 +59,55 @@ private class CdpSqlQueryTest {
     }
 
     @IsTest
+    static void should_handle_inherited_collection_overloads_with_list_and_set() {
+        // Arrange
+        CdpSqlQuery q1 = CdpSqlQuery.of('ssot__Individual__dlm', 'i');
+        CdpSqlQuery q2 = CdpSqlQuery.of('ssot__Individual__dlm', 'i');
+
+        // Act
+        q1.field('i.ssot__Id__c').addConditionIn('i.ssot__Id__c', new List<Object>{ 'a', 'b' });
+        q2.field('i.ssot__Id__c').addConditionIn('i.ssot__Id__c', new Set<Object>{ 'a' });
+
+        // Assert
+        Assert.isTrue(q1.toString().contains('WHERE i.ssot__Id__c IN $1'));
+        Assert.areEqual(new List<Object>{ 'a', 'b' }, q1.getBindings().get('$1'));
+        Assert.isTrue(q2.toString().contains('WHERE i.ssot__Id__c IN $1'));
+        Assert.areEqual(new Set<Object>{ 'a' }, q2.getBindings().get('$1'));
+    }
+
+    @IsTest
+    static void should_support_stub_api_for_cdp_sql_query() {
+        // Arrange
+        RecordingStubProvider provider = new RecordingStubProvider();
+        CdpSqlQuery stubbed = (CdpSqlQuery) Test.createStub(CdpSqlQuery.class, provider);
+
+        // Act
+        SqlQuery afterList = stubbed.fields(new List<Object>{ 'ssot__Id__c' });
+        SqlQuery afterSet = stubbed.fields(new Set<Object>{ 'ssot__Id__c' });
+        PostgresSqlQuery afterDistinctOnList = stubbed.distinctOn(new List<Object>{ 'ssot__Id__c' });
+        PostgresSqlQuery afterDistinctOnSet = stubbed.distinctOn(new Set<Object>{ 'ssot__Id__c' });
+
+        // Assert
+        Assert.isTrue(stubbed === afterList, 'fields List<T> should retain the concrete stub type');
+        Assert.isTrue(stubbed === afterSet, 'fields Set<T> should retain the concrete stub type');
+        Assert.isTrue(stubbed === afterDistinctOnList, 'distinctOn List<T> should retain the concrete stub type');
+        Assert.isTrue(stubbed === afterDistinctOnSet, 'distinctOn Set<T> should retain the concrete stub type');
+        Assert.areEqual('fields', provider.calls[0].methodName);
+        Assert.areEqual('List<ANY>', provider.calls[0].paramTypeName);
+        Assert.areEqual(new List<Object>{ 'ssot__Id__c' }, provider.calls[0].arg);
+        Assert.areEqual('fields', provider.calls[1].methodName);
+        Assert.areEqual('Set<ANY>', provider.calls[1].paramTypeName);
+        Assert.areEqual(new Set<Object>{ 'ssot__Id__c' }, provider.calls[1].arg);
+        Assert.areEqual('distinctOn', provider.calls[2].methodName);
+        Assert.areEqual('List<ANY>', provider.calls[2].paramTypeName);
+        Assert.areEqual(new List<Object>{ 'ssot__Id__c' }, provider.calls[2].arg);
+        Assert.areEqual('distinctOn', provider.calls[3].methodName);
+        Assert.areEqual('Set<ANY>', provider.calls[3].paramTypeName);
+        Assert.areEqual(new Set<Object>{ 'ssot__Id__c' }, provider.calls[3].arg);
+        Assert.areEqual(4, provider.calls.size(), 'Every dispatched call should be recorded');
+    }
+
+    @IsTest
     static void should_handle_complex_ssot_query() {
         // Arrange
         CdpSqlQuery q = CdpSqlQuery.of('ssot__Individual__dlm', 'i');
@@ -466,6 +515,36 @@ private class CdpSqlQueryTest {
             res.setStatusCode(statusCode);
             res.setBody(responseBody);
             return res;
+        }
+    }
+
+    private class RecordedCall {
+        private final String methodName;
+        private final String paramTypeName;
+        private final Object arg;
+
+        private RecordedCall(final String methodName, final String paramTypeName, final Object arg) {
+            this.methodName = methodName;
+            this.paramTypeName = paramTypeName;
+            this.arg = arg;
+        }
+    }
+
+    private class RecordingStubProvider implements System.StubProvider {
+        private final List<RecordedCall> calls = new List<RecordedCall>();
+
+        public Object handleMethodCall(
+            Object stubbedObject,
+            String stubbedMethodName,
+            Type returnType,
+            List<Type> listOfParamTypes,
+            List<String> listOfParamNames,
+            List<Object> listOfArgs
+        ) {
+            String paramTypeName = listOfParamTypes.isEmpty() ? null : listOfParamTypes[0].toString();
+            Object arg = listOfArgs.isEmpty() ? null : listOfArgs[0];
+            calls.add(new RecordedCall(stubbedMethodName, paramTypeName, arg));
+            return stubbedObject;
         }
     }
 }
