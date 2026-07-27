@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Apex SQL Query'
+  short_description: 'SQL query framework architecture'
+  default_prompt: 'Use $apex-sql-query to work on the SQL query framework.'

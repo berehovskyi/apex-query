@@ -1,3 +1,8 @@
+---
+name: apex-style
+description: Apex implementation and layout conventions for the apex-query repository. Use when writing, refactoring, or reviewing Apex code in this project, especially for fluent APIs, Stub API compatibility, null handling, coercion, control flow, class organization, and sharing boundaries.
+---
+
 # Style Standards
 
 ## General Code Shape
@@ -266,35 +271,38 @@ concrete type to continue fluent chaining without a cast.
 
 ## Apex Stub API Compatibility
 
-- For public Apex libraries whose classes are intended to be mocked, Stub API
-  support takes priority over compile-time type safety on the concrete
-  implementation surface. Preserve the strongest typed contract on interfaces,
-  but accept a narrow, documented loss of parameter type safety in the concrete
-  class when a live `Test.createStub` probe proves that Apex cannot generate the
-  typed signature.
-- Treat collection-related Stub API failures as signature-specific, not as a
-  general lack of `List` support. Ordinary typed lists can be stubbable. The
-  observed failures involve fluent self-returning methods with
-  `Iterable<Object>` or `List<Object>` parameters and concrete methods returning
-  `Iterable<T>`; verify the exact signature on the project's Apex API version
-  before applying a workaround.
+- The concrete `SoqlQuery` and `SqlQuery` classes must remain compatible with
+  `Test.createStub`. Mockability is part of the public library contract.
+- Do not expose parameterized interfaces such as `Iterable<T>` as parameters on
+  the public virtual concrete surface when they prevent stub generation.
+- Expose matching, strongly typed `List<T>` and `Set<T>` overloads on both the
+  builder interface and concrete class. Do not widen concrete parameters to
+  `Object` and do not use interface parameter contravariance as a compatibility
+  bridge.
+- Delegate both public overloads to one differently named private helper that
+  accepts `Iterable<T>`. The private helper preserves reusable iterable-based
+  logic without participating in Stub API generation.
+- Do not give the private `Iterable<T>` helper the same name as the public
+  `List<T>` and `Set<T>` overloads. Apex reports the resulting overload set as an
+  ambiguous method signature.
+- For methods that return parameterized interfaces, use a **Covariant Return Type
+  Wrapper**: preserve the parameterized return type on the interface and return
+  a concrete, non-parameterized adapter from the concrete method.
 - A single unsupported method can invalidate the generated stub class even when
   a test never calls that method. When a class must support `Test.createStub`,
-  probe its complete public/virtual method surface after adding `Iterator`,
-  `Iterable`, or generic collection overloads.
+  probe its complete public virtual method surface after every collection API
+  change.
 - These failures affect Stub API-generated test classes, not normal production
   dispatch.
-- When an interface method accepts `Iterable<Object>` or `List<Object>` and a
-  focused probe confirms that the matching fluent concrete signature breaks the
-  Stub API, keep the typed interface contract. In the concrete implementation
-  only, accept `Object` and immediately cast it to the contract type at the
-  delegation boundary.
+
+### Collection Parameters
 
 Interface contract:
 
 ```apex
 public interface CollectionBuilder {
-    CollectionBuilder addValues(Iterable<Object> values);
+    CollectionBuilder addValues(List<Object> values);
+    CollectionBuilder addValues(Set<Object> values);
 }
 ```
 
@@ -304,12 +312,16 @@ Concrete implementation:
 public virtual class DefaultCollectionBuilder implements CollectionBuilder {
     private final List<Object> values = new List<Object>();
 
-    /**
-     * @param values Iterable of values; declared as `Object` for Stub API compatibility
-     * @return this builder
-     */
-    public DefaultCollectionBuilder addValues(final Object values) {
-        for (Object value : (Iterable<Object>) values) {
+    public DefaultCollectionBuilder addValues(final List<Object> values) {
+        return addValuesFrom(values);
+    }
+
+    public DefaultCollectionBuilder addValues(final Set<Object> values) {
+        return addValuesFrom(values);
+    }
+
+    private DefaultCollectionBuilder addValuesFrom(final Iterable<Object> values) {
+        for (Object value : values) {
             this.values.add(value);
         }
         return this;
@@ -317,21 +329,16 @@ public virtual class DefaultCollectionBuilder implements CollectionBuilder {
 }
 ```
 
-This is an intentional Apex compatibility bridge: existing interface consumers
-retain the typed method, concrete callers remain source-compatible because every
-`Iterable<Object>` is also an `Object`, and the implementation avoids the Stub
-API limitation.
+This keeps interface and concrete callers type-safe while reusing one private
+iterable implementation. Use a semantic helper name such as `addValuesFrom` or
+`addInCondition`; never add a same-named private `Iterable<T>` overload.
 
-- Document every weakened concrete parameter with ApexDoc that states its real
-  runtime type, for example `@param values Iterable of values`. Explain
-  separately that the concrete parameter is declared as `Object` for Stub API
-  compatibility. Do not make callers infer the required type from an
-  implementation cast.
-- Return types cannot use the same `Object` bridge. Replacing an interface return
-  such as `Iterable<Object>` with `Object` widens the contract and does not
-  implement the interface. Instead, return a covariant concrete adapter that
-  implements the typed interface, stores the original iterable, and delegates
-  `iterator()` without copying or eagerly consuming it.
+### Covariant Return Type Wrapper
+
+Replacing an interface return such as `Iterable<Object>` with `Object` widens the
+contract and does not implement the interface. Return a concrete adapter that
+implements the parameterized interface, stores the original iterable, and
+delegates `iterator()` without copying or eagerly consuming it.
 
 Interface contract:
 
@@ -370,18 +377,16 @@ different element types require different `Iterable<T>` contracts. Keep the
 adapter constructor public when Stub providers need to construct a lazy return
 value around test data.
 
-Use this bridge narrowly:
+Validate both patterns explicitly:
 
-- Do not weaken the interface parameter to `Object`.
-- Do not replace ordinary collection parameters without a reproducing Stub API
-  test.
-- Concrete callers lose compile-time parameter safety and invalid values fail at
-  the cast. Interface-typed callers retain the typed contract.
-- Stub providers observe `Object` as the concrete parameter type. Review argument
-  matching and overload resolution, especially calls with `null`.
-- Keep a regression test that both creates the concrete stub and invokes at least
-  one bridged method. Stub creation verifies the complete method surface; method
-  invocation verifies the provider's parameter and return handling.
+- Create stubs for the complete concrete query classes.
+- Invoke both the `List<T>` and `Set<T>` public overloads through generated stubs.
+- Invoke collection methods through their builder interfaces to lock exact
+  interface conformance.
+- Invoke lazy return methods and verify their concrete wrappers preserve lazy
+  iteration without copying the source.
+- Keep public overloads and their corresponding interface declarations in the
+  same logical order.
 - Source compatibility does not prove managed-package upgrade or binary
   compatibility. Validate that separately before changing a released public
   method signature.

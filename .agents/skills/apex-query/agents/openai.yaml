@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Apex Query'
+  short_description: 'SOQL query framework architecture'
+  default_prompt: 'Use $apex-query to work on the SOQL query framework.'

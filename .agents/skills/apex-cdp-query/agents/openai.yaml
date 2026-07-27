@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Apex CDP Query'
+  short_description: 'Data 360 query framework architecture'
+  default_prompt: 'Use $apex-cdp-query to work on the Data 360 query module.'

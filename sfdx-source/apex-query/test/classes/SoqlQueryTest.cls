@@ -1681,6 +1681,42 @@ private class SoqlQueryTest {
     }
 
     @IsTest
+    static void should_project_local_database_rows_into_maps() {
+        // Arrange
+        SoqlQuery query = SoqlQuery.of(User.SObjectType)
+            .fields('Id, Username')
+            .byId(UserInfo.getUserId())
+            .withSystemMode();
+
+        // Act
+        List<Object> rows = query.fetchInto(List<Map<String, Object>>.class);
+
+        // Assert
+        Assert.areEqual(1, rows.size());
+        Assert.areEqual(String.valueOf(UserInfo.getUserId()), ((Map<String, Object>) rows[0]).get('Id'));
+        Assert.areEqual(UserInfo.getUserName(), ((Map<String, Object>) rows[0]).get('Username'));
+    }
+
+    @IsTest
+    static void should_reject_next_on_an_empty_projected_local_cursor() {
+        // Arrange
+        Iterator<Object> iterator = SoqlQuery.of(Account.SObjectType)
+            .field(Account.Id)
+            .addConditionEq(Account.Name, 'Missing ' + System.UUID.randomUUID())
+            .fetchLazyInto(List<Map<String, Object>>.class)
+            .iterator();
+
+        // Act & Assert
+        Assert.isFalse(iterator.hasNext());
+        try {
+            iterator.next();
+            Assert.fail('Expected a ListException.');
+        } catch (System.ListException e) {
+            Assert.isTrue(e.getMessage().contains('List index out of bounds'));
+        }
+    }
+
+    @IsTest
     static void should_call_run_more_on_driver_when_fetching_lazy() {
         // Arrange
         MockDriver mock = new MockDriver();
@@ -1691,6 +1727,79 @@ private class SoqlQueryTest {
 
         // Assert
         Assert.isTrue(mock.runMoreCalled, 'runMore should be called on the driver');
+    }
+
+    @IsTest
+    static void should_reject_without_sharing_in_default_user_mode_before_query() {
+        // Arrange
+        Integer queries = Limits.getQueries();
+
+        // Act
+        try {
+            SoqlQuery.of(Account.SObjectType).field(Account.Id).withoutSharing().fetch();
+            Assert.fail('Expected a QueryException.');
+        } catch (Query.QueryException e) {
+            // Assert
+            Assert.areEqual('withoutSharing requires AccessLevel.SYSTEM_MODE exactly.', e.getMessage());
+            Assert.areEqual(queries, Limits.getQueries());
+        }
+    }
+
+    @IsTest
+    static void should_reject_without_sharing_in_explicit_user_mode_regardless_of_call_order() {
+        // Arrange
+        List<SoqlQuery> queries = new List<SoqlQuery>{
+            SoqlQuery.of(Account.SObjectType).field(Account.Id).withoutSharing().withUserMode(),
+            SoqlQuery.of(Account.SObjectType).field(Account.Id).withUserMode().withoutSharing()
+        };
+        Integer executedQueries = Limits.getQueries();
+
+        // Act
+        for (SoqlQuery query : queries) {
+            try {
+                query.fetch();
+                Assert.fail('Expected a QueryException.');
+            } catch (Query.QueryException e) {
+                // Assert
+                Assert.areEqual('withoutSharing requires AccessLevel.SYSTEM_MODE exactly.', e.getMessage());
+            }
+        }
+        Assert.areEqual(executedQueries, Limits.getQueries());
+    }
+
+    @IsTest
+    static void should_allow_without_sharing_in_system_mode_regardless_of_call_order() {
+        // Arrange
+        List<SoqlQuery> queries = new List<SoqlQuery>{
+            SoqlQuery.of(Account.SObjectType).field(Account.Id).withoutSharing().withSystemMode(),
+            SoqlQuery.of(Account.SObjectType).field(Account.Id).withSystemMode().withoutSharing()
+        };
+        Integer executedQueries = Limits.getQueries();
+
+        // Act
+        for (SoqlQuery query : queries) {
+            query.fetch();
+        }
+
+        // Assert
+        Assert.areEqual(executedQueries + 2, Limits.getQueries());
+    }
+
+    @IsTest
+    static void should_execute_every_database_terminal_through_explicit_sharing_drivers() {
+        // Arrange
+        List<SoqlQuery> queries = new List<SoqlQuery>{
+            SoqlQuery.of(Account.SObjectType).field(Account.Id).withSharing().withSystemMode(),
+            SoqlQuery.of(Account.SObjectType).field(Account.Id).withoutSharing().withSystemMode()
+        };
+
+        // Act & Assert
+        for (SoqlQuery query : queries) {
+            Assert.isTrue(query.fetchCount() >= 0);
+            Assert.isNotNull(query.locator());
+            Assert.isNotNull(query.cursor());
+            Assert.isNotNull(query.paginationCursor());
+        }
     }
 
     @IsTest
@@ -3357,7 +3466,7 @@ private class SoqlQueryTest {
                     .addConditionEq('Status', 'Closed')
                     .addCondition(SoqlQuery.COND.field('CreatedDate').gt(dt))
             )
-            .subQuery('Contacts', 'Contact', new Set<String>{ 'LastName', 'AccountId' })
+            .subQuery('Contacts', 'Contact', new Set<Object>{ 'LastName', 'AccountId' })
             .subQuery(
                 'Tasks',
                 SoqlQuery.of(Task.SObjectType)
@@ -3398,7 +3507,7 @@ private class SoqlQueryTest {
                 SoqlQuery.COND.field('Id')
                     .notIn(SoqlQuery.of('Case').field('AccountId').addConditionEq(Case.CaseNumber, '00001017'))
             )
-            .addConditionIn(Account.Type, new Set<String>{ 'Customer', 'Partner' })
+            .addConditionIn(Account.Type, new Set<Object>{ 'Customer', 'Partner' })
             .addConditionEq(SoqlQuery.DT.calendarYear(Account.CreatedDate), thisYear)
             .addConditionEq('LastModifiedDate', SoqlQuery.LIT.lastNDays(27))
             .addCondition(
@@ -3461,7 +3570,7 @@ private class SoqlQueryTest {
                 'var$2' => 'Comment',
                 'var$3' => new Set<String>{ 'Emerald Solutions 4' },
                 'var$4' => '00001017',
-                'var$5' => new Set<String>{ 'Customer', 'Partner' },
+                'var$5' => new Set<Object>{ 'Customer', 'Partner' },
                 'var$6' => thisYear,
                 'var$7' => 100
             },
@@ -3473,7 +3582,7 @@ private class SoqlQueryTest {
             new Map<String, Object>{
                 'var$0' => new Set<String>{ 'Emerald Solutions 4' },
                 'var$1' => '00001017',
-                'var$2' => new Set<String>{ 'Customer', 'Partner' },
+                'var$2' => new Set<Object>{ 'Customer', 'Partner' },
                 'var$3' => thisYear,
                 'var$4' => 100
             },
@@ -3485,11 +3594,195 @@ private class SoqlQueryTest {
 
     @IsTest
     static void should_support_stub_api_for_soql_query() {
-        SoqlQuery stubbed = (SoqlQuery) Test.createStub(SoqlQuery.class, new EchoStubProvider());
-        SoqlQuery returned = stubbed.fields(new List<Object>{ 'Id', 'Name' });
+        // Arrange
+        RecordingStubProvider provider = new RecordingStubProvider();
+        SoqlQuery stubbed = (SoqlQuery) Test.createStub(SoqlQuery.class, provider);
 
-        Assert.isNotNull(stubbed, 'SoqlQuery should expose a Stub API-compatible fluent surface');
-        Assert.isTrue(stubbed === returned, 'Bridged fluent calls should retain the concrete stub type');
+        // Act
+        SoqlQuery afterList = stubbed.fields(new List<Object>{ 'Id', 'Name' });
+        SoqlQuery afterSet = stubbed.fields(new Set<Object>{ 'Id', 'Name' });
+
+        // Assert
+        Assert.isTrue(stubbed === afterList, 'List<T> fluent call should retain the concrete stub type');
+        Assert.isTrue(stubbed === afterSet, 'Set<T> fluent call should retain the concrete stub type');
+        Assert.areEqual('fields', provider.calls[0].methodName, 'First call should be fields');
+        Assert.areEqual('List<ANY>', provider.calls[0].paramTypeName, 'List overload should be dispatched');
+        Assert.areEqual(new List<Object>{ 'Id', 'Name' }, provider.calls[0].arg, 'List argument should be forwarded');
+        Assert.areEqual('fields', provider.calls[1].methodName, 'Second call should be fields');
+        Assert.areEqual('Set<ANY>', provider.calls[1].paramTypeName, 'Set overload should be dispatched');
+        Assert.areEqual(new Set<Object>{ 'Id', 'Name' }, provider.calls[1].arg, 'Set argument should be forwarded');
+    }
+
+    @IsTest
+    static void should_support_stub_api_for_soql_query_collection_families() {
+        // Arrange
+        RecordingStubProvider provider = new RecordingStubProvider();
+        SoqlQuery stubbed = (SoqlQuery) Test.createStub(SoqlQuery.class, provider);
+        Id pid = fakeId(PermissionSet.SObjectType);
+        Id accId = fakeId(Account.SObjectType);
+
+        // Act & Assert: each family below must dispatch through the generated stub without
+        // an ambiguous or unsupported signature invalidating the whole stub class.
+        Assert.isTrue(
+            stubbed === stubbed.allFields(new List<SoqlQuery.FieldProperty>{ SoqlQuery.FieldProperty.ACCESSIBLE })
+        );
+        Assert.isTrue(
+            stubbed === stubbed.allFields(new Set<SoqlQuery.FieldProperty>{ SoqlQuery.FieldProperty.ACCESSIBLE })
+        );
+        Assert.isTrue(stubbed === stubbed.subQuery('Contacts', 'Contact', new List<Object>{ 'LastName' }));
+        Assert.isTrue(stubbed === stubbed.subQuery('Contacts', 'Contact', new Set<Object>{ 'LastName' }));
+        Assert.isTrue(stubbed === stubbed.addConditionIn(Account.Type, new List<Object>{ 'Customer' }));
+        Assert.isTrue(stubbed === stubbed.addConditionIn(Account.Type, new Set<Object>{ 'Customer' }));
+        Assert.isTrue(stubbed === stubbed.addConditionNotIn('Type', new List<Object>{ 'Customer' }));
+        Assert.isTrue(stubbed === stubbed.addConditionNotIn('Type', new Set<Object>{ 'Customer' }));
+        Assert.isTrue(stubbed === stubbed.byIds(new List<Id>{ accId }));
+        Assert.isTrue(stubbed === stubbed.byIds(new Set<Id>{ accId }));
+        Assert.isTrue(stubbed === stubbed.groupBy(new List<Object>{ 'Type' }));
+        Assert.isTrue(stubbed === stubbed.groupBy(new Set<Object>{ 'Type' }));
+        Assert.isTrue(stubbed === stubbed.groupByRollup(new List<Object>{ 'Type' }));
+        Assert.isTrue(stubbed === stubbed.groupByRollup(new Set<Object>{ 'Type' }));
+        Assert.isTrue(stubbed === stubbed.groupByCube(new List<Object>{ 'Type' }));
+        Assert.isTrue(stubbed === stubbed.groupByCube(new Set<Object>{ 'Type' }));
+        Assert.isTrue(stubbed === stubbed.addHavingIn('Type', new List<Object>{ 'Customer' }));
+        Assert.isTrue(stubbed === stubbed.addHavingIn('Type', new Set<Object>{ 'Customer' }));
+        Assert.isTrue(stubbed === stubbed.addHavingNotIn('Type', new List<Object>{ 'Customer' }));
+        Assert.isTrue(stubbed === stubbed.addHavingNotIn('Type', new Set<Object>{ 'Customer' }));
+        Assert.isTrue(stubbed === stubbed.withPermissionSetIds(new List<Id>{ pid }));
+        Assert.isTrue(stubbed === stubbed.withPermissionSetIds(new Set<Id>{ pid }));
+        Assert.areEqual(22, provider.calls.size(), 'Every dispatched call should be recorded');
+    }
+
+    @IsTest
+    static void should_handle_select_fields_set_overload() {
+        // Arrange
+        SoqlQuery q = SoqlQuery.of('Account');
+
+        // Act
+        q.fields(new Set<Object>{ 'Id', Account.Name });
+
+        // Assert
+        Assert.isTrue(q.toString().contains('Id, Name'), 'fields Set overload');
+    }
+
+    @IsTest
+    static void should_handle_all_fields_set_overload() {
+        // Arrange
+        SoqlQuery q = SoqlQuery.of(Account.SObjectType);
+
+        // Act
+        String actual = q.allFields(new Set<SoqlQuery.FieldProperty>{ SoqlQuery.FieldProperty.ACCESSIBLE }).toString();
+
+        // Assert
+        Assert.isTrue(actual.contains('Id'), 'allFields Set overload');
+    }
+
+    @IsTest
+    static void should_handle_subquery_set_overload() {
+        // Arrange
+        SoqlQuery q = SoqlQuery.of('Account').field('Id');
+
+        // Act
+        q.subQuery('Contacts', Contact.SObjectType, new Set<Object>{ 'LastName', Contact.Email })
+            .subQuery('Opportunities', 'Opportunity', new Set<Object>{ 'Amount' });
+
+        // Assert
+        String actual = q.toString();
+        Assert.isTrue(actual.contains('(SELECT LastName, Email FROM Contacts)'), 'SObjectType Set overload');
+        Assert.isTrue(actual.contains('(SELECT Amount FROM Opportunities)'), 'String Set overload');
+    }
+
+    @IsTest
+    static void should_handle_condition_in_set_overloads() {
+        // Arrange
+        SoqlQuery q1 = SoqlQuery.of('Account').field('Id');
+        SoqlQuery q2 = SoqlQuery.of('Account').field('Id');
+        SoqlQuery q3 = SoqlQuery.of('Account').field('Id');
+        SoqlQuery q4 = SoqlQuery.of('Account').field('Id');
+
+        // Act
+        q1.addConditionIn(Account.Type, new Set<Object>{ 'Customer' });
+        q2.addConditionNotIn('Type', new Set<Object>{ 'Customer' });
+        q3.addConditionIn('Type', new Set<Object>{ 'Customer' });
+        q4.addConditionNotIn(Account.Type, new Set<Object>{ 'Customer' });
+
+        // Assert
+        Assert.isTrue(q1.toString().contains('Type IN :var$0'), 'addConditionIn(SObjectField, Set) overload');
+        Assert.areEqual(new Set<Object>{ 'Customer' }, q1.getBindings().get('var$0'), 'addConditionIn Set binding');
+        Assert.isTrue(q2.toString().contains('Type NOT IN :var$0'), 'addConditionNotIn(String, Set) overload');
+        Assert.areEqual(new Set<Object>{ 'Customer' }, q2.getBindings().get('var$0'), 'addConditionNotIn Set binding');
+        Assert.isTrue(q3.toString().contains('Type IN :var$0'), 'addConditionIn(String, Set) overload');
+        Assert.isTrue(q4.toString().contains('Type NOT IN :var$0'), 'addConditionNotIn(SObjectField, Set) overload');
+    }
+
+    @IsTest
+    static void should_handle_byids_set_overload_and_typed_nulls() {
+        // Arrange
+        Id accId = fakeId(Account.SObjectType);
+        SoqlQuery q1 = SoqlQuery.of('Account').byIds(new Set<Id>{ accId });
+        SoqlQuery q2 = SoqlQuery.of('Account').byIds((List<Id>) null);
+        SoqlQuery q3 = SoqlQuery.of('Account').byIds((Set<Id>) null);
+
+        // Assert
+        Assert.isTrue(q1.toString().contains('Id IN :var$0'), 'byIds Set overload');
+        Assert.areEqual(new Set<Id>{ accId }, q1.getBindings().get('var$0'), 'byIds Set binding');
+        Assert.isNull(q2.getBindings().get('var$0'), 'byIds typed List null binding');
+        Assert.isNull(q3.getBindings().get('var$0'), 'byIds typed Set null binding');
+    }
+
+    @IsTest
+    static void should_handle_group_by_family_set_overloads() {
+        // Arrange & Act
+        String ordinary = SoqlQuery.of('Account').field('Type').groupBy(new Set<Object>{ 'Type' }).toString();
+        String rollup = SoqlQuery.of('Account').field('Type').groupByRollup(new Set<Object>{ 'Type' }).toString();
+        String cube = SoqlQuery.of('Account').field('Type').groupByCube(new Set<Object>{ 'Type' }).toString();
+
+        // Assert
+        Assert.isTrue(ordinary.contains('GROUP BY Type'), 'groupBy Set overload');
+        Assert.isTrue(rollup.contains('GROUP BY ROLLUP (Type)'), 'groupByRollup Set overload');
+        Assert.isTrue(cube.contains('GROUP BY CUBE (Type)'), 'groupByCube Set overload');
+    }
+
+    @IsTest
+    static void should_handle_having_in_set_overloads() {
+        // Arrange
+        SoqlQuery q = SoqlQuery.of(Account.SObjectType).count(Account.Id).groupBy(Account.Type);
+
+        // Act
+        q.addHavingIn(Account.Type, new Set<Object>{ 'Customer' })
+            .addHavingNotIn('Type', new Set<Object>{ 'Partner' })
+            .addHavingNotIn(Account.Industry, new Set<Object>{ 'Banking' });
+
+        // Assert
+        String actual = q.toString();
+        Assert.isTrue(actual.contains('Type IN :var$0'), 'addHavingIn(SObjectField, Set) overload');
+        Assert.isTrue(actual.contains('Type NOT IN :var$1'), 'addHavingNotIn(String, Set) overload');
+        Assert.isTrue(actual.contains('Industry NOT IN :var$2'), 'addHavingNotIn(SObjectField, Set) overload');
+        Assert.areEqual(new Set<Object>{ 'Customer' }, q.getBindings().get('var$0'), 'addHavingIn Set binding');
+        Assert.areEqual(new Set<Object>{ 'Partner' }, q.getBindings().get('var$1'), 'addHavingNotIn Set binding');
+        Assert.areEqual(
+            new Set<Object>{ 'Banking' },
+            q.getBindings().get('var$2'),
+            'addHavingNotIn SObjectField Set binding'
+        );
+    }
+
+    @IsTest
+    static void should_handle_permission_set_ids_set_overload() {
+        // Arrange
+        Id pid = fakeId(PermissionSet.SObjectType);
+        SoqlQuery q = SoqlQuery.of('Account').field('Id');
+
+        // Act & Assert
+        try {
+            q.withPermissionSetIds(new Set<Id>{ pid }).fetch();
+        } catch (Cache.Session.SessionCacheException e) {
+            Assert.isTrue(!String.isEmpty(e.getMessage()), 'Platform Cache might not be available');
+        } catch (System.SecurityException e) {
+            Assert.isTrue(
+                e.getMessage().contains('requires ApexUserModeWithPermset'),
+                'ApexUserModeWithPermset feature might not be enabled'
+            );
+        }
     }
     // </editor-fold>
 
@@ -3508,6 +3801,36 @@ private class SoqlQueryTest {
             List<String> listOfParamNames,
             List<Object> listOfArgs
         ) {
+            return stubbedObject;
+        }
+    }
+
+    private class RecordedCall {
+        private final String methodName;
+        private final String paramTypeName;
+        private final Object arg;
+
+        private RecordedCall(final String methodName, final String paramTypeName, final Object arg) {
+            this.methodName = methodName;
+            this.paramTypeName = paramTypeName;
+            this.arg = arg;
+        }
+    }
+
+    private class RecordingStubProvider implements System.StubProvider {
+        private final List<RecordedCall> calls = new List<RecordedCall>();
+
+        public Object handleMethodCall(
+            Object stubbedObject,
+            String stubbedMethodName,
+            Type returnType,
+            List<Type> listOfParamTypes,
+            List<String> listOfParamNames,
+            List<Object> listOfArgs
+        ) {
+            String paramTypeName = listOfParamTypes.isEmpty() ? null : listOfParamTypes[0].toString();
+            Object arg = listOfArgs.isEmpty() ? null : listOfArgs[0];
+            calls.add(new RecordedCall(stubbedMethodName, paramTypeName, arg));
             return stubbedObject;
         }
     }

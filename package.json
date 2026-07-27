@@ -1,7 +1,7 @@
 {
     "devDependencies": {
         "@prettier/plugin-xml": "^3.4.2",
-        "prettier": "^3.9.5",
+        "prettier": "^3.9.6",
         "prettier-plugin-apex": "^2.3.0"
     },
     "scripts": {
@@ -15,6 +15,6 @@
         "sfca:check:detail": "sf code-analyzer run --config-file ./code-analyzer.yml --workspace . --view detail",
         "sf:push": "sf project deploy start",
         "sf:push:test": "sf project deploy start -l RunRelevantTests",
-        "sf:run:test:all": "sf apex run test --tests QueryTest --tests RestDriverTest --tests SoqlQueryTest --tests SqlQueryTest --tests MySqlQueryTest --tests PostgresSqlQueryTest --wait 60 --code-coverage"
+        "sf:run:test:all": "sf apex run test --tests QueryTest --tests RestDriverTest --tests SoqlQueryTest --tests SoqlQuerySharingTest --tests SqlQueryTest --tests MySqlQueryTest --tests PostgresSqlQueryTest --wait 60 --code-coverage"
     }
 }

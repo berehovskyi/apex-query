@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Apex Testing'
+  short_description: 'Apex query testing conventions'
+  default_prompt: 'Use $apex-testing to add or review tests in apex-query.'

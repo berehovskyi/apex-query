@@ -366,12 +366,19 @@ public virtual inherited sharing class SqlQuery extends Query implements Builder
     }
 
     /**
-     * @param fields Iterable of fields to select
+     * @param fields List of fields to select
      * @return this query
      */
-    public SqlQuery fields(final Object fields) {
-        selects.addAll((Iterable<Object>) fields);
-        return this;
+    public SqlQuery fields(final List<Object> fields) {
+        return addFields(fields);
+    }
+
+    /**
+     * @param fields Set of fields to select
+     * @return this query
+     */
+    public SqlQuery fields(final Set<Object> fields) {
+        return addFields(fields);
     }
 
     public SqlQuery fields(final String fields) {
@@ -497,11 +504,20 @@ public virtual inherited sharing class SqlQuery extends Query implements Builder
 
     /**
      * @param field field or expression to compare
-     * @param iterable Iterable of values
+     * @param values List of values
      * @return this query
      */
-    public SqlQuery addConditionIn(final String field, final Object iterable) {
-        return addCondition(new Condition().field(field).inx((Iterable<Object>) iterable));
+    public SqlQuery addConditionIn(final String field, final List<Object> values) {
+        return addInCondition(field, values);
+    }
+
+    /**
+     * @param field field or expression to compare
+     * @param values Set of values
+     * @return this query
+     */
+    public SqlQuery addConditionIn(final String field, final Set<Object> values) {
+        return addInCondition(field, values);
     }
 
     public SqlQuery addConditionIn(final String field, final Query.Builder semiJoinSubQuery) {
@@ -510,11 +526,20 @@ public virtual inherited sharing class SqlQuery extends Query implements Builder
 
     /**
      * @param field field or expression to compare
-     * @param iterable Iterable of values
+     * @param values List of values
      * @return this query
      */
-    public SqlQuery addConditionNotIn(final String field, final Object iterable) {
-        return addCondition(new Condition().field(field).notIn((Iterable<Object>) iterable));
+    public SqlQuery addConditionNotIn(final String field, final List<Object> values) {
+        return addNotInCondition(field, values);
+    }
+
+    /**
+     * @param field field or expression to compare
+     * @param values Set of values
+     * @return this query
+     */
+    public SqlQuery addConditionNotIn(final String field, final Set<Object> values) {
+        return addNotInCondition(field, values);
     }
 
     public SqlQuery addConditionNotIn(final String field, final Query.Builder antiJoinSubQuery) {
@@ -526,51 +551,110 @@ public virtual inherited sharing class SqlQuery extends Query implements Builder
     }
 
     /**
-     * @param ids Iterable of record IDs
+     * @param ids List of record IDs
      * @return this query
      */
-    public virtual SqlQuery byIds(final Object ids) {
-        return addConditionIn('Id', (Iterable<String>) ids);
+    public virtual SqlQuery byIds(final List<String> ids) {
+        return addIdsCondition(ids);
     }
 
     /**
-     * @param element field or expression, or an Iterable of fields and expressions
+     * @param ids Set of record IDs
+     * @return this query
+     */
+    public virtual SqlQuery byIds(final Set<String> ids) {
+        return addIdsCondition(ids);
+    }
+
+    /**
+     * @param element field or expression
      * @return this query
      */
     public SqlQuery groupBy(final Object element) {
-        if (element instanceof Iterable<Object>) {
-            groupsBy.addAll((Iterable<Object>) element);
-        } else {
-            groupsBy.add(element);
-        }
+        groupsBy.add(element);
         return this;
     }
 
     /**
-     * @param element field or expression, or an Iterable of fields and expressions for `ROLLUP`
+     * @param elements List of fields or expressions
+     * @return this query
+     */
+    public SqlQuery groupBy(final List<Object> elements) {
+        return addGroupBy(elements);
+    }
+
+    /**
+     * @param elements Set of fields or expressions
+     * @return this query
+     */
+    public SqlQuery groupBy(final Set<Object> elements) {
+        return addGroupBy(elements);
+    }
+
+    /**
+     * @param element field or expression for `ROLLUP`
      * @return this query
      */
     public SqlQuery groupByRollup(final Object element) {
-        groupsBy.add(element instanceof Iterable<Object> ? rollup((Iterable<Object>) element) : rollup(element));
+        groupsBy.add(rollup(element));
         return this;
     }
 
     /**
-     * @param element field or expression, or an Iterable of fields and expressions for `CUBE`
+     * @param elements List of fields or expressions for `ROLLUP`
+     * @return this query
+     */
+    public SqlQuery groupByRollup(final List<Object> elements) {
+        return addRollup(elements);
+    }
+
+    /**
+     * @param elements Set of fields or expressions for `ROLLUP`
+     * @return this query
+     */
+    public SqlQuery groupByRollup(final Set<Object> elements) {
+        return addRollup(elements);
+    }
+
+    /**
+     * @param element field or expression for `CUBE`
      * @return this query
      */
     public SqlQuery groupByCube(final Object element) {
-        groupsBy.add(element instanceof Iterable<Object> ? cube((Iterable<Object>) element) : cube(element));
+        groupsBy.add(cube(element));
         return this;
     }
 
     /**
-     * @param elements Iterable of grouping sets
+     * @param elements List of fields or expressions for `CUBE`
      * @return this query
      */
-    public SqlQuery groupByGroupingSets(final Object elements) {
-        groupsBy.add(groupingSets((Iterable<Object>) elements));
-        return this;
+    public SqlQuery groupByCube(final List<Object> elements) {
+        return addCube(elements);
+    }
+
+    /**
+     * @param elements Set of fields or expressions for `CUBE`
+     * @return this query
+     */
+    public SqlQuery groupByCube(final Set<Object> elements) {
+        return addCube(elements);
+    }
+
+    /**
+     * @param elements List of grouping sets
+     * @return this query
+     */
+    public SqlQuery groupByGroupingSets(final List<Object> elements) {
+        return addGroupingSets(elements);
+    }
+
+    /**
+     * @param elements Set of grouping sets
+     * @return this query
+     */
+    public SqlQuery groupByGroupingSets(final Set<Object> elements) {
+        return addGroupingSets(elements);
     }
 
     public SqlQuery havingx(final Query.Criterion condition) {
@@ -616,11 +700,20 @@ public virtual inherited sharing class SqlQuery extends Query implements Builder
 
     /**
      * @param field aggregate field or expression to compare
-     * @param iterable Iterable of values
+     * @param values List of values
      * @return this query
      */
-    public SqlQuery addHavingIn(final String field, final Object iterable) {
-        return addHaving(new Condition().field(field).inx((Iterable<Object>) iterable));
+    public SqlQuery addHavingIn(final String field, final List<Object> values) {
+        return addHavingInCondition(field, values);
+    }
+
+    /**
+     * @param field aggregate field or expression to compare
+     * @param values Set of values
+     * @return this query
+     */
+    public SqlQuery addHavingIn(final String field, final Set<Object> values) {
+        return addHavingInCondition(field, values);
     }
 
     public SqlQuery union(final Query.Builder other) {
@@ -1045,6 +1138,47 @@ public virtual inherited sharing class SqlQuery extends Query implements Builder
             omitRowLimitingForCount = previousValue;
         }
     }
+
+    private SqlQuery addFields(final Iterable<Object> fields) {
+        selects.addAll(fields);
+        return this;
+    }
+
+    private SqlQuery addInCondition(final String field, final Iterable<Object> values) {
+        return addCondition(new Condition().field(field).inx(values));
+    }
+
+    private SqlQuery addNotInCondition(final String field, final Iterable<Object> values) {
+        return addCondition(new Condition().field(field).notIn(values));
+    }
+
+    private SqlQuery addIdsCondition(final Iterable<String> ids) {
+        return addCondition(new Condition().field('Id').inx((Iterable<Object>) ids));
+    }
+
+    private SqlQuery addGroupBy(final Iterable<Object> elements) {
+        groupsBy.addAll(elements);
+        return this;
+    }
+
+    private SqlQuery addRollup(final Iterable<Object> elements) {
+        groupsBy.add(rollup(elements));
+        return this;
+    }
+
+    private SqlQuery addCube(final Iterable<Object> elements) {
+        groupsBy.add(cube(elements));
+        return this;
+    }
+
+    private SqlQuery addGroupingSets(final Iterable<Object> elements) {
+        groupsBy.add(groupingSets(elements));
+        return this;
+    }
+
+    private SqlQuery addHavingInCondition(final String field, final Iterable<Object> values) {
+        return addHaving(new Condition().field(field).inx(values));
+    }
     // </editor-fold>
 
     // <editor-fold desc="API">
@@ -1076,9 +1210,16 @@ public virtual inherited sharing class SqlQuery extends Query implements Builder
         Query.Builder crossJoin(String table, String alias);
         // GROUP BY
         Query.Builder groupBy(Object element);
+        Query.Builder groupBy(List<Object> elements);
+        Query.Builder groupBy(Set<Object> elements);
         Query.Builder groupByRollup(Object element);
+        Query.Builder groupByRollup(List<Object> elements);
+        Query.Builder groupByRollup(Set<Object> elements);
         Query.Builder groupByCube(Object element);
-        Query.Builder groupByGroupingSets(Iterable<Object> elements);
+        Query.Builder groupByCube(List<Object> elements);
+        Query.Builder groupByCube(Set<Object> elements);
+        Query.Builder groupByGroupingSets(List<Object> elements);
+        Query.Builder groupByGroupingSets(Set<Object> elements);
         // SET OPERATORS
         Query.Builder union(Query.Builder other);
         Query.Builder unionAll(Query.Builder other);
@@ -1090,7 +1231,8 @@ public virtual inherited sharing class SqlQuery extends Query implements Builder
         Query.Builder values(List<List<Object>> rows, String alias, List<String> columns);
         // WHERE
         Query.Builder byId(String id);
-        Query.Builder byIds(Iterable<String> ids);
+        Query.Builder byIds(List<String> ids);
+        Query.Builder byIds(Set<String> ids);
         // ROW LIMITING
         Query.Builder fetchFirst(Integer count);
         Query.Builder fetchFirstWithTies(Integer count);
